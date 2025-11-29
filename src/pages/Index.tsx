@@ -5,6 +5,10 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
 
 type Section = 'dashboard' | 'courses' | 'trainers' | 'analytics' | 'achievements' | 'profile';
@@ -35,6 +39,26 @@ interface Trainer {
   difficulty: 'easy' | 'medium' | 'hard';
   completed: number;
   total: number;
+}
+
+interface Lesson {
+  id: number;
+  title: string;
+  content: string;
+  completed: boolean;
+}
+
+interface QuizQuestion {
+  id: number;
+  question: string;
+  options: string[];
+  correct: number;
+}
+
+interface VoiceScenario {
+  id: number;
+  clientMessage: string;
+  tips: string[];
 }
 
 const mockCourses: Course[] = [
@@ -144,8 +168,91 @@ const leaderboardData = [
   { name: 'Михаил Козлов', points: 1980, avatar: '👨‍💼' }
 ];
 
+const courseLessons: Record<number, Lesson[]> = {
+  1: [
+    { id: 1, title: 'Введение в продажи', content: 'Основные принципы успешных продаж и понимание потребностей клиента', completed: true },
+    { id: 2, title: 'Техника активного слушания', content: 'Как правильно слушать клиента и задавать вопросы', completed: true },
+    { id: 3, title: 'Презентация продукта', content: 'Эффективные методы демонстрации ценности вашего продукта', completed: true },
+    { id: 4, title: 'Работа с возражениями', content: 'Как превращать возражения в возможности', completed: false },
+    { id: 5, title: 'Закрытие сделки', content: 'Финальный этап: как завершить продажу', completed: false }
+  ],
+  2: [
+    { id: 1, title: 'Психология клиента', content: 'Понимание мотивации и потребностей', completed: true },
+    { id: 2, title: 'Конфликтные ситуации', content: 'Работа со сложными клиентами', completed: true },
+    { id: 3, title: 'Стандарты сервиса', content: 'Создание wow-эффекта для клиента', completed: true }
+  ],
+  3: [
+    { id: 1, title: 'Подготовка к презентации', content: 'Исследование аудитории и целей', completed: false },
+    { id: 2, title: 'Структура презентации', content: 'Как построить убедительную историю', completed: false },
+    { id: 3, title: 'Визуальное оформление', content: 'Дизайн слайдов и материалов', completed: false }
+  ],
+  4: [
+    { id: 1, title: 'Эффективная коммуникация', content: 'Основы командной работы', completed: true },
+    { id: 2, title: 'Разрешение конфликтов', content: 'Техники медиации в команде', completed: false },
+    { id: 3, title: 'Делегирование задач', content: 'Распределение ответственности', completed: false }
+  ]
+};
+
+const quizQuestions: QuizQuestion[] = [
+  {
+    id: 1,
+    question: 'Какой первый шаг в процессе продажи?',
+    options: ['Презентация продукта', 'Выявление потребностей', 'Закрытие сделки', 'Отправка счёта'],
+    correct: 1
+  },
+  {
+    id: 2,
+    question: 'Что такое активное слушание?',
+    options: ['Просто слушать клиента', 'Слушать и задавать уточняющие вопросы', 'Перебивать клиента', 'Говорить больше клиента'],
+    correct: 1
+  },
+  {
+    id: 3,
+    question: 'Как лучше работать с возражениями?',
+    options: ['Игнорировать их', 'Спорить с клиентом', 'Понять причину и предложить решение', 'Сразу давать скидку'],
+    correct: 2
+  },
+  {
+    id: 4,
+    question: 'Что важнее всего в клиентском сервисе?',
+    options: ['Скорость ответа', 'Эмпатия и понимание', 'Скидки', 'Знание продукта'],
+    correct: 1
+  },
+  {
+    id: 5,
+    question: 'Когда лучше всего закрывать сделку?',
+    options: ['В первые 5 минут', 'После полного выявления потребностей', 'Через неделю после презентации', 'Когда клиент сам предложит'],
+    correct: 1
+  }
+];
+
+const voiceScenarios: VoiceScenario[] = [
+  {
+    id: 1,
+    clientMessage: 'Ваш продукт слишком дорогой. У конкурентов дешевле.',
+    tips: ['Не спорьте о цене напрямую', 'Подчеркните уникальную ценность', 'Спросите, что именно клиент сравнивает']
+  },
+  {
+    id: 2,
+    clientMessage: 'Мне нужно подумать. Я вам перезвоню.',
+    tips: ['Выясните истинную причину сомнений', 'Предложите конкретные следующие шаги', 'Установите дату следующего контакта']
+  },
+  {
+    id: 3,
+    clientMessage: 'У меня сейчас нет времени это обсуждать.',
+    tips: ['Уважайте время клиента', 'Предложите удобное время для разговора', 'Кратко обозначьте выгоду встречи']
+  }
+];
+
 const Index = () => {
   const [activeSection, setActiveSection] = useState<Section>('dashboard');
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [currentLesson, setCurrentLesson] = useState(0);
+  const [selectedTrainer, setSelectedTrainer] = useState<Trainer | null>(null);
+  const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
+  const [voiceResponse, setVoiceResponse] = useState('');
+  const [voiceStep, setVoiceStep] = useState(0);
+  const [showResults, setShowResults] = useState(false);
 
   const userStats = {
     coursesCompleted: 12,
@@ -227,7 +334,7 @@ const Index = () => {
                   </div>
                   <Progress value={course.progress} className="h-2" />
                 </div>
-                <Button className="w-full mt-3" size="sm">Продолжить</Button>
+                <Button className="w-full mt-3" size="sm" onClick={() => setSelectedCourse(course)}>Продолжить</Button>
               </div>
             ))}
           </div>
@@ -295,7 +402,11 @@ const Index = () => {
                 </div>
               )}
               
-              <Button className="w-full" variant={course.status === 'not-started' ? 'outline' : 'default'}>
+              <Button 
+                className="w-full" 
+                variant={course.status === 'not-started' ? 'outline' : 'default'}
+                onClick={() => setSelectedCourse(course)}
+              >
                 {course.status === 'completed' ? 'Повторить' : course.status === 'in-progress' ? 'Продолжить' : 'Начать курс'}
               </Button>
             </div>
@@ -339,7 +450,7 @@ const Index = () => {
               <Progress value={(trainer.completed / trainer.total) * 100} className="h-2" />
             </div>
 
-            <Button className="w-full">
+            <Button className="w-full" onClick={() => setSelectedTrainer(trainer)}>
               {trainer.completed === 0 ? 'Начать' : 'Продолжить'}
             </Button>
           </Card>
@@ -357,7 +468,7 @@ const Index = () => {
               Практикуйте переговоры с ИИ-ассистентом. Получайте мгновенную обратную связь по интонации, аргументации и технике продаж.
             </p>
           </div>
-          <Button size="lg" className="px-8 flex-shrink-0">
+          <Button size="lg" className="px-8 flex-shrink-0" onClick={() => setSelectedTrainer(mockTrainers[0])}>
             Попробовать
           </Button>
         </div>
@@ -624,6 +735,35 @@ const Index = () => {
     </div>
   );
 
+  const handleCompleteLesson = () => {
+    const lessons = selectedCourse ? courseLessons[selectedCourse.id] : [];
+    if (currentLesson < lessons.length - 1) {
+      setCurrentLesson(currentLesson + 1);
+    } else {
+      setSelectedCourse(null);
+      setCurrentLesson(0);
+    }
+  };
+
+  const handleSubmitQuiz = () => {
+    setShowResults(true);
+  };
+
+  const handleNextVoiceStep = () => {
+    if (voiceStep < voiceScenarios.length - 1) {
+      setVoiceStep(voiceStep + 1);
+      setVoiceResponse('');
+    } else {
+      setSelectedTrainer(null);
+      setVoiceStep(0);
+      setVoiceResponse('');
+    }
+  };
+
+  const correctAnswers = Object.entries(quizAnswers).filter(
+    ([qId, answer]) => quizQuestions[parseInt(qId)].correct === answer
+  ).length;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
@@ -703,6 +843,229 @@ const Index = () => {
           ))}
         </div>
       </div>
+
+      <Dialog open={!!selectedCourse} onOpenChange={() => { setSelectedCourse(null); setCurrentLesson(0); }}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          {selectedCourse && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-2xl">{selectedCourse.title}</DialogTitle>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                  {courseLessons[selectedCourse.id]?.map((lesson, index) => (
+                    <Button
+                      key={lesson.id}
+                      variant={currentLesson === index ? 'default' : lesson.completed ? 'secondary' : 'outline'}
+                      size="sm"
+                      onClick={() => setCurrentLesson(index)}
+                      className="flex-shrink-0"
+                    >
+                      {lesson.completed && <Icon name="Check" size={14} className="mr-1" />}
+                      Урок {lesson.id}
+                    </Button>
+                  ))}
+                </div>
+
+                <Card className="p-6">
+                  <h3 className="text-xl font-semibold mb-4">
+                    {courseLessons[selectedCourse.id]?.[currentLesson]?.title}
+                  </h3>
+                  <p className="text-muted-foreground mb-6 leading-relaxed">
+                    {courseLessons[selectedCourse.id]?.[currentLesson]?.content}
+                  </p>
+                  
+                  <div className="bg-primary/5 p-4 rounded-lg mb-6">
+                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                      <Icon name="Lightbulb" size={18} className="text-primary" />
+                      Ключевые моменты:
+                    </h4>
+                    <ul className="space-y-2 text-sm text-muted-foreground">
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary">•</span>
+                        <span>Применяйте изученные техники на практике</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary">•</span>
+                        <span>Записывайте важные инсайты для дальнейшего использования</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary">•</span>
+                        <span>Попробуйте закрепить знания на тренажёрах</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <Button 
+                      variant="outline" 
+                      className="flex-1"
+                      disabled={currentLesson === 0}
+                      onClick={() => setCurrentLesson(currentLesson - 1)}
+                    >
+                      <Icon name="ChevronLeft" size={18} className="mr-2" />
+                      Назад
+                    </Button>
+                    <Button 
+                      className="flex-1"
+                      onClick={handleCompleteLesson}
+                    >
+                      {currentLesson < (courseLessons[selectedCourse.id]?.length || 0) - 1 ? 'Следующий урок' : 'Завершить курс'}
+                      <Icon name="ChevronRight" size={18} className="ml-2" />
+                    </Button>
+                  </div>
+                </Card>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!selectedTrainer} onOpenChange={() => { 
+        setSelectedTrainer(null); 
+        setQuizAnswers({}); 
+        setVoiceResponse(''); 
+        setVoiceStep(0); 
+        setShowResults(false); 
+      }}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          {selectedTrainer && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-2xl flex items-center gap-3">
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                    selectedTrainer.type === 'voice' ? 'bg-primary/10 text-primary' :
+                    selectedTrainer.type === 'quiz' ? 'bg-accent/10 text-accent' :
+                    'bg-success/10 text-success'
+                  }`}>
+                    <Icon name={selectedTrainer.type === 'voice' ? 'Mic' : selectedTrainer.type === 'quiz' ? 'ClipboardList' : 'Lightbulb'} size={24} />
+                  </div>
+                  {selectedTrainer.title}
+                </DialogTitle>
+              </DialogHeader>
+
+              {selectedTrainer.type === 'quiz' && (
+                <div className="space-y-6">
+                  {!showResults ? (
+                    <>
+                      {quizQuestions.map((q, index) => (
+                        <Card key={q.id} className="p-6">
+                          <h3 className="font-semibold mb-4">
+                            Вопрос {index + 1}: {q.question}
+                          </h3>
+                          <RadioGroup
+                            value={quizAnswers[index]?.toString()}
+                            onValueChange={(value) => setQuizAnswers({ ...quizAnswers, [index]: parseInt(value) })}
+                          >
+                            {q.options.map((option, optIndex) => (
+                              <div key={optIndex} className="flex items-center space-x-2 p-3 rounded-lg hover:bg-muted/50">
+                                <RadioGroupItem value={optIndex.toString()} id={`q${index}-opt${optIndex}`} />
+                                <Label htmlFor={`q${index}-opt${optIndex}`} className="flex-1 cursor-pointer">
+                                  {option}
+                                </Label>
+                              </div>
+                            ))}
+                          </RadioGroup>
+                        </Card>
+                      ))}
+                      <Button 
+                        className="w-full" 
+                        size="lg"
+                        onClick={handleSubmitQuiz}
+                        disabled={Object.keys(quizAnswers).length < quizQuestions.length}
+                      >
+                        Завершить тест
+                      </Button>
+                    </>
+                  ) : (
+                    <Card className="p-8 text-center">
+                      <div className={`w-24 h-24 mx-auto rounded-full flex items-center justify-center mb-4 ${
+                        correctAnswers >= 4 ? 'bg-success/10 text-success' : 
+                        correctAnswers >= 3 ? 'bg-accent/10 text-accent' : 
+                        'bg-destructive/10 text-destructive'
+                      }`}>
+                        <span className="text-4xl font-bold">{correctAnswers}/{quizQuestions.length}</span>
+                      </div>
+                      <h3 className="text-2xl font-bold mb-2">
+                        {correctAnswers >= 4 ? 'Отлично! 🎉' : correctAnswers >= 3 ? 'Хорошо! 👍' : 'Можно лучше 💪'}
+                      </h3>
+                      <p className="text-muted-foreground mb-6">
+                        {correctAnswers >= 4 
+                          ? 'Вы отлично усвоили материал!' 
+                          : correctAnswers >= 3 
+                          ? 'Неплохой результат, но есть куда расти'
+                          : 'Рекомендуем повторить материал курса'}
+                      </p>
+                      <Button onClick={() => { setShowResults(false); setQuizAnswers({}); }}>
+                        Пройти ещё раз
+                      </Button>
+                    </Card>
+                  )}
+                </div>
+              )}
+
+              {selectedTrainer.type === 'voice' && (
+                <div className="space-y-6">
+                  <Card className="p-6 bg-primary/5 border-primary/20">
+                    <div className="flex items-start gap-3 mb-4">
+                      <Avatar className="w-12 h-12">
+                        <AvatarFallback>👤</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <p className="font-semibold mb-1">Клиент говорит:</p>
+                        <p className="text-lg">{voiceScenarios[voiceStep]?.clientMessage}</p>
+                      </div>
+                    </div>
+                  </Card>
+
+                  <Card className="p-6">
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <Icon name="Lightbulb" size={18} className="text-primary" />
+                      Подсказки:
+                    </h3>
+                    <ul className="space-y-2 mb-4">
+                      {voiceScenarios[voiceStep]?.tips.map((tip, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                          <span className="text-primary">•</span>
+                          <span>{tip}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </Card>
+
+                  <Card className="p-6">
+                    <Label className="mb-2 block">Ваш ответ:</Label>
+                    <Textarea
+                      value={voiceResponse}
+                      onChange={(e) => setVoiceResponse(e.target.value)}
+                      placeholder="Напишите, как бы вы ответили клиенту..."
+                      className="min-h-32 mb-4"
+                    />
+                    <Button 
+                      className="w-full" 
+                      onClick={handleNextVoiceStep}
+                      disabled={!voiceResponse.trim()}
+                    >
+                      {voiceStep < voiceScenarios.length - 1 ? 'Следующий сценарий' : 'Завершить тренажёр'}
+                    </Button>
+                  </Card>
+                </div>
+              )}
+
+              {selectedTrainer.type === 'practice' && (
+                <Card className="p-8 text-center">
+                  <Icon name="Construction" size={48} className="mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-xl font-semibold mb-2">В разработке</h3>
+                  <p className="text-muted-foreground">
+                    Этот тренажёр скоро будет доступен!
+                  </p>
+                </Card>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
