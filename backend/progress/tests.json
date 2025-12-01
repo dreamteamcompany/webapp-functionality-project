@@ -1,0 +1,27 @@
+{
+  "tests": [
+    {
+      "name": "Get progress without auth",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "Unauthorized"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Start course without auth",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "item_id": 1
+      },
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "Unauthorized"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
