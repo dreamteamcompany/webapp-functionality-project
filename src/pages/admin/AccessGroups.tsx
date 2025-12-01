@@ -124,7 +124,7 @@ export default function AccessGroupsAdmin() {
           'X-Session-Token': authService.getSessionToken() || '',
         },
         body: JSON.stringify({
-          ...(isEdit && { access_group_id: editingAccessGroup.id }),
+          ...(isEdit && { id: editingAccessGroup.id }),
           name: formData.name,
           description: formData.description,
           permission_ids: selectedPermissions,
