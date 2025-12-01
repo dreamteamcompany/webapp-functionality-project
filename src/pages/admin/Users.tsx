@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
-import { authService, USERS_API_URL, ROLES_API_URL } from '@/lib/auth';
+import { authService, USERS_API_URL } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 
 interface User {
@@ -16,8 +16,6 @@ interface User {
   username: string;
   email: string;
   full_name: string;
-  role_id: number;
-  role_name: string;
   company_id?: number;
   company_name?: string;
   department_id?: number;
@@ -25,12 +23,6 @@ interface User {
   is_blocked: boolean;
   created_at: string;
   last_login?: string;
-}
-
-interface Role {
-  id: number;
-  name: string;
-  description: string;
 }
 
 interface Company {
@@ -52,7 +44,6 @@ export default function UsersAdmin() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
-  const [roles, setRoles] = useState<Role[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,14 +55,12 @@ export default function UsersAdmin() {
     email: '',
     full_name: '',
     password: '',
-    role_id: '',
     company_id: '',
     department_id: '',
   });
 
   useEffect(() => {
     fetchUsers();
-    fetchRoles();
     fetchCompanies();
   }, []);
 
@@ -99,19 +88,7 @@ export default function UsersAdmin() {
     }
   };
 
-  const fetchRoles = async () => {
-    try {
-      const response = await fetch(`${ROLES_API_URL}?resource=roles`, {
-        headers: {
-          'X-Session-Token': authService.getSessionToken() || '',
-        },
-      });
-      const data = await response.json();
-      if (data.roles) setRoles(data.roles);
-    } catch (error) {
-      console.error('Failed to fetch roles:', error);
-    }
-  };
+
 
   const fetchCompanies = async () => {
     try {
@@ -157,7 +134,6 @@ export default function UsersAdmin() {
         },
         body: JSON.stringify({
           ...formData,
-          role_id: parseInt(formData.role_id),
           company_id: formData.company_id ? parseInt(formData.company_id) : undefined,
           department_id: formData.department_id ? parseInt(formData.department_id) : undefined,
         }),
@@ -166,7 +142,7 @@ export default function UsersAdmin() {
       if (response.ok) {
         toast({ title: 'Успех', description: 'Пользователь создан' });
         setShowCreateDialog(false);
-        setFormData({ username: '', email: '', full_name: '', password: '', role_id: '', company_id: '', department_id: '' });
+        setFormData({ username: '', email: '', full_name: '', password: '', company_id: '', department_id: '' });
         fetchUsers();
       } else {
         const error = await response.json();
@@ -246,9 +222,8 @@ export default function UsersAdmin() {
                         <p className="font-semibold">{user.full_name}</p>
                         <p className="text-sm text-muted-foreground">@{user.username} • {user.email}</p>
                         <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="secondary">{user.role_name}</Badge>
                           {user.company_name && <Badge variant="outline">{user.company_name}</Badge>}
-                          {user.department_name && <Badge variant="outline">{user.department_name}</Badge>}
+                          {user.department_name && <Badge variant="secondary">{user.department_name}</Badge>}
                           {user.is_blocked && <Badge variant="destructive">Заблокирован</Badge>}
                         </div>
                       </div>
@@ -314,21 +289,6 @@ export default function UsersAdmin() {
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 placeholder="••••••••"
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="role">Роль</Label>
-              <Select value={formData.role_id} onValueChange={(value) => setFormData({ ...formData, role_id: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Выберите роль" />
-                </SelectTrigger>
-                <SelectContent>
-                  {roles.map((role) => (
-                    <SelectItem key={role.id} value={role.id.toString()}>
-                      {role.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="company">Компания</Label>
