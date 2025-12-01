@@ -98,8 +98,8 @@ export default function MyLearning() {
         },
         body: JSON.stringify({
           entity_type: 'progress',
-          type: 'course',
-          id: courseId,
+          item_type: 'course',
+          item_id: courseId,
           status: 'in_progress',
           progress_percent: 0,
         }),
@@ -131,8 +131,8 @@ export default function MyLearning() {
         },
         body: JSON.stringify({
           entity_type: 'progress',
-          type: 'trainer',
-          id: trainerId,
+          item_type: 'trainer',
+          item_id: trainerId,
           status: 'in_progress',
           progress_percent: 0,
         }),
@@ -164,8 +164,8 @@ export default function MyLearning() {
         },
         body: JSON.stringify({
           entity_type: 'progress',
-          type: 'course',
-          id: courseId,
+          item_type: 'course',
+          item_id: courseId,
           status: 'completed',
           progress_percent: 100,
         }),
@@ -197,8 +197,8 @@ export default function MyLearning() {
         },
         body: JSON.stringify({
           entity_type: 'progress',
-          type: 'trainer',
-          id: trainerId,
+          item_type: 'trainer',
+          item_id: trainerId,
           status: 'completed',
           progress_percent: 100,
         }),
@@ -259,6 +259,98 @@ export default function MyLearning() {
       </header>
 
       <main className="container mx-auto px-6 py-8">
+        {/* My Courses in Progress */}
+        {progress && (progress.courses.filter(c => c.status === 'in_progress').length > 0 || progress.trainers.filter(t => t.status === 'in_progress').length > 0) && (
+          <section className="mb-10">
+            <div className="flex items-center gap-3 mb-6">
+              <Icon name="Play" size={24} className="text-blue-600" />
+              <h2 className="text-2xl font-bold">Мои курсы</h2>
+            </div>
+            
+            {progress.courses.filter(c => c.status === 'in_progress').length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-4 text-muted-foreground">В процессе</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {progress.courses.filter(c => c.status === 'in_progress').map((course) => (
+                    <Card key={course.id} className="p-6 border-blue-200 bg-blue-50/50">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                          <Icon name="BookOpen" size={24} className="text-blue-600" />
+                        </div>
+                        <Badge variant="default">В процессе</Badge>
+                      </div>
+                      <h3 className="font-semibold text-lg mb-4">{course.title}</h3>
+                      
+                      <div className="mb-4">
+                        <div className="flex items-center justify-between text-xs mb-2">
+                          <span className="text-muted-foreground">Прогресс</span>
+                          <span className="font-semibold text-blue-600">{course.progress_percent}%</span>
+                        </div>
+                        <Progress value={course.progress_percent} className="h-2" />
+                      </div>
+                      
+                      <Button 
+                        onClick={() => handleCompleteCourse(course.id)}
+                        disabled={actionLoading === course.id}
+                        className="w-full"
+                        size="sm"
+                      >
+                        {actionLoading === course.id ? (
+                          <Icon name="Loader2" size={16} className="animate-spin mr-2" />
+                        ) : (
+                          <Icon name="CheckCircle2" size={16} className="mr-2" />
+                        )}
+                        Завершить курс
+                      </Button>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {progress.trainers.filter(t => t.status === 'in_progress').length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-4 text-muted-foreground">Тренажеры в процессе</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {progress.trainers.filter(t => t.status === 'in_progress').map((trainer) => (
+                    <Card key={trainer.id} className="p-6 border-orange-200 bg-orange-50/50">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="w-12 h-12 bg-orange-500/10 rounded-lg flex items-center justify-center">
+                          <Icon name="Zap" size={24} className="text-orange-600" />
+                        </div>
+                        <Badge variant="default">В процессе</Badge>
+                      </div>
+                      <h3 className="font-semibold text-lg mb-4">{trainer.title}</h3>
+                      
+                      <div className="mb-4">
+                        <div className="flex items-center justify-between text-xs mb-2">
+                          <span className="text-muted-foreground">Прогресс</span>
+                          <span className="font-semibold text-orange-600">{trainer.progress_percent}%</span>
+                        </div>
+                        <Progress value={trainer.progress_percent} className="h-2" />
+                      </div>
+                      
+                      <Button 
+                        onClick={() => handleCompleteTrainer(trainer.id)}
+                        disabled={actionLoading === (trainer.id + 10000)}
+                        className="w-full"
+                        size="sm"
+                      >
+                        {actionLoading === (trainer.id + 10000) ? (
+                          <Icon name="Loader2" size={16} className="animate-spin mr-2" />
+                        ) : (
+                          <Icon name="CheckCircle2" size={16} className="mr-2" />
+                        )}
+                        Завершить тренажер
+                      </Button>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
         {!hasProgress && (
           <Card className="p-6 mb-8 bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20">
             <div className="flex items-start gap-4">
