@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import UsersAdmin from "./pages/admin/Users";
 import RolesAdmin from "./pages/admin/Roles";
+import AuditLog from "./pages/admin/AuditLog";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute requiredPermission="users.view"><UsersAdmin /></ProtectedRoute>} />
           <Route path="/admin/roles" element={<ProtectedRoute requiredPermission="roles.view"><RolesAdmin /></ProtectedRoute>} />
+          <Route path="/admin/audit" element={<ProtectedRoute requiredPermission="system.logs"><AuditLog /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

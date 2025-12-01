@@ -197,6 +197,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 ''', (username, email, password_hash, full_name, role_id, current_user['id']))
                 
                 new_user = dict(cur.fetchone())
+                
+                ip_address = headers.get('x-forwarded-for', '').split(',')[0] or headers.get('x-real-ip', 'unknown')
+                user_agent = headers.get('user-agent', 'unknown')
+                
+                cur.execute('''
+                    INSERT INTO audit_log (user_id, username, action_type, entity_type, entity_id, 
+                                           description, ip_address, user_agent)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                ''', (current_user['id'], current_user['username'], 'user.create', 'user', new_user['id'],
+                      f"Создан пользователь {username} ({full_name})", ip_address, user_agent))
+                
                 conn.commit()
                 cur.close()
                 conn.close()
@@ -244,7 +255,25 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     }
                 
                 is_blocked = body_data.get('is_blocked', True)
+                
+                cur.execute('SELECT username FROM users WHERE id = %s', (user_id,))
+                target_user = cur.fetchone()
+                target_username = target_user['username'] if target_user else 'Unknown'
+                
                 cur.execute('UPDATE users SET is_blocked = %s, updated_at = NOW() WHERE id = %s', (is_blocked, user_id))
+                
+                ip_address = headers.get('x-forwarded-for', '').split(',')[0] or headers.get('x-real-ip', 'unknown')
+                user_agent = headers.get('user-agent', 'unknown')
+                
+                action_text = 'заблокирован' if is_blocked else 'разблокирован'
+                cur.execute('''
+                    INSERT INTO audit_log (user_id, username, action_type, entity_type, entity_id, 
+                                           description, ip_address, user_agent)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                ''', (current_user['id'], current_user['username'], 
+                      'user.block' if is_blocked else 'user.unblock', 'user', user_id,
+                      f"Пользователь {target_username} {action_text}", ip_address, user_agent))
+                
                 conn.commit()
                 cur.close()
                 conn.close()

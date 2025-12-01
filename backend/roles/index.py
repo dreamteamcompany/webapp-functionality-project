@@ -254,6 +254,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             VALUES (%s, %s)
                         ''', (role_id, perm_id))
                 
+                ip_address = headers.get('x-forwarded-for', '').split(',')[0] or headers.get('x-real-ip', 'unknown')
+                user_agent = headers.get('user-agent', 'unknown')
+                
+                cur.execute('''
+                    INSERT INTO audit_log (user_id, username, action_type, entity_type, entity_id, 
+                                           description, ip_address, user_agent)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                ''', (current_user['id'], current_user['username'], 'role.create', 'role', role_id,
+                      f"Создана роль {name} с {len(permission_ids)} правами", ip_address, user_agent))
+                
                 conn.commit()
                 cur.close()
                 conn.close()

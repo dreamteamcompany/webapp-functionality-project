@@ -947,17 +947,27 @@ const Index = () => {
                     <Icon name="User" size={16} className="mr-2" />
                     Профиль
                   </DropdownMenuItem>
-                  {authService.hasAnyPermission(['users.view', 'roles.view']) && (
+                  {authService.hasAnyPermission(['users.view', 'roles.view', 'system.logs']) && (
                     <>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => navigate('/admin/users')}>
-                        <Icon name="Users" size={16} className="mr-2" />
-                        Управление пользователями
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate('/admin/roles')}>
-                        <Icon name="ShieldCheck" size={16} className="mr-2" />
-                        Управление ролями
-                      </DropdownMenuItem>
+                      {authService.hasPermission('users.view') && (
+                        <DropdownMenuItem onClick={() => navigate('/admin/users')}>
+                          <Icon name="Users" size={16} className="mr-2" />
+                          Управление пользователями
+                        </DropdownMenuItem>
+                      )}
+                      {authService.hasPermission('roles.view') && (
+                        <DropdownMenuItem onClick={() => navigate('/admin/roles')}>
+                          <Icon name="ShieldCheck" size={16} className="mr-2" />
+                          Управление ролями
+                        </DropdownMenuItem>
+                      )}
+                      {authService.hasPermission('system.logs') && (
+                        <DropdownMenuItem onClick={() => navigate('/admin/audit')}>
+                          <Icon name="ScrollText" size={16} className="mr-2" />
+                          История действий
+                        </DropdownMenuItem>
+                      )}
                     </>
                   )}
                   <DropdownMenuSeparator />
