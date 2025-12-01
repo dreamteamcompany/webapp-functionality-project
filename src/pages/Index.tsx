@@ -802,6 +802,15 @@ export default function Index() {
                   </DropdownMenuItem>
                 </>
               )}
+              {authService.hasPermission('courses.view') && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/admin/learning')}>
+                    <Icon name="BookOpen" size={16} className="mr-2" />
+                    Курсы и тренажеры
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                 <Icon name="LogOut" size={16} className="mr-2" />

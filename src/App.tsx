@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import UsersAdmin from "./pages/admin/Users";
 import AccessGroupsAdmin from "./pages/admin/AccessGroups";
 import CompaniesAdmin from "./pages/admin/Companies";
+import LearningAdmin from "./pages/admin/Learning";
 import AuditLog from "./pages/admin/AuditLog";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/admin/users" element={<ProtectedRoute requiredPermission="users.view"><UsersAdmin /></ProtectedRoute>} />
           <Route path="/admin/access-groups" element={<ProtectedRoute requiredPermission="access_groups.view"><AccessGroupsAdmin /></ProtectedRoute>} />
           <Route path="/admin/companies" element={<ProtectedRoute requiredPermission="companies.view"><CompaniesAdmin /></ProtectedRoute>} />
+          <Route path="/admin/learning" element={<ProtectedRoute requiredPermission="courses.view"><LearningAdmin /></ProtectedRoute>} />
           <Route path="/admin/audit" element={<ProtectedRoute requiredPermission="system.logs"><AuditLog /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

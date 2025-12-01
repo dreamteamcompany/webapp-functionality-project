@@ -1,7 +1,7 @@
 '''
-Business: Organization management API - companies and departments CRUD
+Business: Organization and learning management API - companies, departments, courses, trainers CRUD
 Args: event with httpMethod, body, headers, path; context with request_id
-Returns: HTTP response with companies/departments data
+Returns: HTTP response with companies/departments/courses/trainers data
 '''
 
 import json
@@ -39,8 +39,10 @@ def has_permission(user_id: int, permission_code: str) -> bool:
     cur.execute('''
         SELECT COUNT(*) as count
         FROM users u
-        INNER JOIN role_permissions rp ON rp.role_id = u.role_id
-        INNER JOIN permissions p ON p.id = rp.permission_id
+        LEFT JOIN departments d ON u.department_id = d.id
+        LEFT JOIN access_group_permissions agp ON agp.access_group_id = d.access_group_id
+        LEFT JOIN access_group_permissions agp2 ON agp2.access_group_id = u.role_id
+        LEFT JOIN permissions p ON p.id = COALESCE(agp.permission_id, agp2.permission_id)
         WHERE u.id = %s AND p.code = %s
     ''', (user_id, permission_code))
     
@@ -104,6 +106,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             return handle_companies(method, user, body_data, headers, cors_headers, event)
         elif entity_type == 'department':
             return handle_departments(method, user, body_data, headers, cors_headers, event)
+        elif entity_type == 'course':
+            return handle_courses(method, user, body_data, headers, cors_headers, event)
+        elif entity_type == 'trainer':
+            return handle_trainers(method, user, body_data, headers, cors_headers, event)
         else:
             return {
                 'statusCode': 400,
@@ -449,3 +455,148 @@ def handle_departments(method, user, body_data, headers, cors_headers, event):
             'body': json.dumps({'department': department}, default=str),
             'isBase64Encoded': False
         }
+
+def handle_courses(method, user, body_data, headers, cors_headers, event):
+    if method == 'GET':
+        if not has_permission(user['id'], 'courses.view'):
+            return {'statusCode': 403, 'headers': cors_headers, 'body': json.dumps({'error': 'Permission denied'}), 'isBase64Encoded': False}
+        
+        query_params = event.get('queryStringParameters', {}) or {}
+        course_id = query_params.get('id')
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        if course_id:
+            cur.execute('SELECT c.*, u.full_name as creator_name FROM courses c LEFT JOIN users u ON u.id = c.created_by WHERE c.id = %s', (course_id,))
+            course = cur.fetchone()
+            if not course:
+                cur.close()
+                conn.close()
+                return {'statusCode': 404, 'headers': cors_headers, 'body': json.dumps({'error': 'Not found'}), 'isBase64Encoded': False}
+            course = dict(course)
+            cur.execute('SELECT d.id, d.name, c.name as company_name FROM course_departments cd INNER JOIN departments d ON d.id = cd.department_id INNER JOIN companies c ON c.id = d.company_id WHERE cd.course_id = %s', (course_id,))
+            course['departments'] = [dict(r) for r in cur.fetchall()]
+            cur.close()
+            conn.close()
+            return {'statusCode': 200, 'headers': cors_headers, 'body': json.dumps({'course': course}, default=str), 'isBase64Encoded': False}
+        
+        cur.execute('SELECT c.id, c.title, c.description, c.duration_hours, c.is_active, c.created_at, u.full_name as creator_name, COUNT(DISTINCT cd.department_id) as departments_count FROM courses c LEFT JOIN users u ON u.id = c.created_by LEFT JOIN course_departments cd ON cd.course_id = c.id GROUP BY c.id, c.title, c.description, c.duration_hours, c.is_active, c.created_at, u.full_name ORDER BY c.created_at DESC')
+        courses = [dict(r) for r in cur.fetchall()]
+        cur.close()
+        conn.close()
+        return {'statusCode': 200, 'headers': cors_headers, 'body': json.dumps({'courses': courses}, default=str), 'isBase64Encoded': False}
+    
+    elif method == 'POST':
+        if not has_permission(user['id'], 'courses.create'):
+            return {'statusCode': 403, 'headers': cors_headers, 'body': json.dumps({'error': 'Permission denied'}), 'isBase64Encoded': False}
+        title = body_data.get('title', '').strip()
+        if not title:
+            return {'statusCode': 400, 'headers': cors_headers, 'body': json.dumps({'error': 'Title required'}), 'isBase64Encoded': False}
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('INSERT INTO courses (title, description, content, duration_hours, is_active, created_by) VALUES (%s, %s, %s, %s, %s, %s) RETURNING *', 
+                    (title, body_data.get('description', ''), body_data.get('content', ''), body_data.get('duration_hours'), body_data.get('is_active', True), user['id']))
+        course = dict(cur.fetchone())
+        for dept_id in body_data.get('department_ids', []):
+            cur.execute('INSERT INTO course_departments (course_id, department_id) VALUES (%s, %s)', (course['id'], dept_id))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {'statusCode': 201, 'headers': cors_headers, 'body': json.dumps({'course': course}, default=str), 'isBase64Encoded': False}
+    
+    elif method == 'PUT':
+        if not has_permission(user['id'], 'courses.edit'):
+            return {'statusCode': 403, 'headers': cors_headers, 'body': json.dumps({'error': 'Permission denied'}), 'isBase64Encoded': False}
+        course_id = body_data.get('id')
+        title = body_data.get('title', '').strip()
+        if not course_id or not title:
+            return {'statusCode': 400, 'headers': cors_headers, 'body': json.dumps({'error': 'ID and title required'}), 'isBase64Encoded': False}
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('UPDATE courses SET title=%s, description=%s, content=%s, duration_hours=%s, is_active=%s WHERE id=%s RETURNING *',
+                    (title, body_data.get('description'), body_data.get('content'), body_data.get('duration_hours'), body_data.get('is_active'), course_id))
+        if cur.rowcount == 0:
+            cur.close()
+            conn.close()
+            return {'statusCode': 404, 'headers': cors_headers, 'body': json.dumps({'error': 'Not found'}), 'isBase64Encoded': False}
+        course = dict(cur.fetchone())
+        if 'department_ids' in body_data:
+            cur.execute('UPDATE course_departments SET course_id = NULL WHERE course_id = %s', (course_id,))
+            for dept_id in body_data['department_ids']:
+                cur.execute('INSERT INTO course_departments (course_id, department_id) VALUES (%s, %s) ON CONFLICT DO NOTHING', (course_id, dept_id))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {'statusCode': 200, 'headers': cors_headers, 'body': json.dumps({'course': course}, default=str), 'isBase64Encoded': False}
+
+def handle_trainers(method, user, body_data, headers, cors_headers, event):
+    if method == 'GET':
+        if not has_permission(user['id'], 'trainers.view'):
+            return {'statusCode': 403, 'headers': cors_headers, 'body': json.dumps({'error': 'Permission denied'}), 'isBase64Encoded': False}
+        query_params = event.get('queryStringParameters', {}) or {}
+        trainer_id = query_params.get('id')
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        if trainer_id:
+            cur.execute('SELECT t.*, u.full_name as creator_name FROM trainers t LEFT JOIN users u ON u.id = t.created_by WHERE t.id = %s', (trainer_id,))
+            trainer = cur.fetchone()
+            if not trainer:
+                cur.close()
+                conn.close()
+                return {'statusCode': 404, 'headers': cors_headers, 'body': json.dumps({'error': 'Not found'}), 'isBase64Encoded': False}
+            trainer = dict(trainer)
+            cur.execute('SELECT d.id, d.name, c.name as company_name FROM trainer_departments td INNER JOIN departments d ON d.id = td.department_id INNER JOIN companies c ON c.id = d.company_id WHERE td.trainer_id = %s', (trainer_id,))
+            trainer['departments'] = [dict(r) for r in cur.fetchall()]
+            cur.close()
+            conn.close()
+            return {'statusCode': 200, 'headers': cors_headers, 'body': json.dumps({'trainer': trainer}, default=str), 'isBase64Encoded': False}
+        
+        cur.execute('SELECT t.id, t.title, t.description, t.difficulty_level, t.is_active, t.created_at, u.full_name as creator_name, COUNT(DISTINCT td.department_id) as departments_count FROM trainers t LEFT JOIN users u ON u.id = t.created_by LEFT JOIN trainer_departments td ON td.trainer_id = t.id GROUP BY t.id, t.title, t.description, t.difficulty_level, t.is_active, t.created_at, u.full_name ORDER BY t.created_at DESC')
+        trainers = [dict(r) for r in cur.fetchall()]
+        cur.close()
+        conn.close()
+        return {'statusCode': 200, 'headers': cors_headers, 'body': json.dumps({'trainers': trainers}, default=str), 'isBase64Encoded': False}
+    
+    elif method == 'POST':
+        if not has_permission(user['id'], 'trainers.create'):
+            return {'statusCode': 403, 'headers': cors_headers, 'body': json.dumps({'error': 'Permission denied'}), 'isBase64Encoded': False}
+        title = body_data.get('title', '').strip()
+        if not title:
+            return {'statusCode': 400, 'headers': cors_headers, 'body': json.dumps({'error': 'Title required'}), 'isBase64Encoded': False}
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('INSERT INTO trainers (title, description, content, difficulty_level, is_active, created_by) VALUES (%s, %s, %s, %s, %s, %s) RETURNING *',
+                    (title, body_data.get('description', ''), body_data.get('content', ''), body_data.get('difficulty_level', ''), body_data.get('is_active', True), user['id']))
+        trainer = dict(cur.fetchone())
+        for dept_id in body_data.get('department_ids', []):
+            cur.execute('INSERT INTO trainer_departments (trainer_id, department_id) VALUES (%s, %s)', (trainer['id'], dept_id))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {'statusCode': 201, 'headers': cors_headers, 'body': json.dumps({'trainer': trainer}, default=str), 'isBase64Encoded': False}
+    
+    elif method == 'PUT':
+        if not has_permission(user['id'], 'trainers.edit'):
+            return {'statusCode': 403, 'headers': cors_headers, 'body': json.dumps({'error': 'Permission denied'}), 'isBase64Encoded': False}
+        trainer_id = body_data.get('id')
+        title = body_data.get('title', '').strip()
+        if not trainer_id or not title:
+            return {'statusCode': 400, 'headers': cors_headers, 'body': json.dumps({'error': 'ID and title required'}), 'isBase64Encoded': False}
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('UPDATE trainers SET title=%s, description=%s, content=%s, difficulty_level=%s, is_active=%s WHERE id=%s RETURNING *',
+                    (title, body_data.get('description'), body_data.get('content'), body_data.get('difficulty_level'), body_data.get('is_active'), trainer_id))
+        if cur.rowcount == 0:
+            cur.close()
+            conn.close()
+            return {'statusCode': 404, 'headers': cors_headers, 'body': json.dumps({'error': 'Not found'}), 'isBase64Encoded': False}
+        trainer = dict(cur.fetchone())
+        if 'department_ids' in body_data:
+            cur.execute('UPDATE trainer_departments SET trainer_id = NULL WHERE trainer_id = %s', (trainer_id,))
+            for dept_id in body_data['department_ids']:
+                cur.execute('INSERT INTO trainer_departments (trainer_id, department_id) VALUES (%s, %s) ON CONFLICT DO NOTHING', (trainer_id, dept_id))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {'statusCode': 200, 'headers': cors_headers, 'body': json.dumps({'trainer': trainer}, default=str), 'isBase64Encoded': False}
