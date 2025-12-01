@@ -253,8 +253,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             elif action == 'validate':
                 session_token = headers.get('x-session-token', '')
+                print(f"[VALIDATE] Received token from header: {session_token[:20] if session_token else 'EMPTY'}")
+                print(f"[VALIDATE] All headers: {headers}")
                 
                 if not session_token:
+                    print("[VALIDATE] No session token - returning 401")
                     return {
                         'statusCode': 401,
                         'headers': cors_headers,
@@ -262,9 +265,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'isBase64Encoded': False
                     }
                 
+                print("[VALIDATE] Looking up user by session...")
                 user = get_user_by_session(session_token)
                 
                 if not user:
+                    print("[VALIDATE] User not found or session expired - returning 401")
                     return {
                         'statusCode': 401,
                         'headers': cors_headers,
@@ -273,6 +278,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     }
                 
                 if user['is_blocked']:
+                    print("[VALIDATE] User is blocked - returning 403")
                     return {
                         'statusCode': 403,
                         'headers': cors_headers,
@@ -280,8 +286,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'isBase64Encoded': False
                     }
                 
+                print(f"[VALIDATE] User found: {user['username']}, getting permissions...")
                 permissions = get_user_permissions(user['id'])
                 
+                print(f"[VALIDATE] Success! Returning {len(permissions)} permissions")
                 return {
                     'statusCode': 200,
                     'headers': cors_headers,
