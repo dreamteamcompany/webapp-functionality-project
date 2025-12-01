@@ -220,7 +220,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             elif action == 'logout':
-                session_token = headers.get('x-session-token', '')
+                session_token = headers.get('X-Session-Token', headers.get('x-session-token', ''))
                 
                 if session_token:
                     user = get_user_by_session(session_token)
@@ -252,9 +252,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             elif action == 'validate':
-                session_token = headers.get('x-session-token', '')
+                session_token = headers.get('X-Session-Token', headers.get('x-session-token', ''))
                 print(f"[VALIDATE] Received token from header: {session_token[:20] if session_token else 'EMPTY'}")
-                print(f"[VALIDATE] All headers: {headers}")
                 
                 if not session_token:
                     print("[VALIDATE] No session token - returning 401")
