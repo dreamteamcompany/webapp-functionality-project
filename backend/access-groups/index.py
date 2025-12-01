@@ -70,7 +70,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False
         }
     
-    session_token = headers.get('x-session-token', '')
+    session_token = headers.get('X-Session-Token', headers.get('x-session-token', ''))
     
     if not session_token:
         return {
