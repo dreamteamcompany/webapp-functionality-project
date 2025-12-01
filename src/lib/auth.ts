@@ -112,11 +112,15 @@ class AuthService {
   }
 
   async validateSession(): Promise<boolean> {
+    console.log('[AUTH] validateSession called, token:', this.sessionToken?.substring(0, 20));
+    
     if (!this.sessionToken) {
+      console.log('[AUTH] No session token, returning false');
       return false;
     }
 
     try {
+      console.log('[AUTH] Sending validation request...');
       const response = await fetch(AUTH_API_URL, {
         method: 'POST',
         headers: {
@@ -128,7 +132,10 @@ class AuthService {
         }),
       });
 
+      console.log('[AUTH] Validation response status:', response.status);
+
       if (!response.ok) {
+        console.log('[AUTH] Validation failed, logging out');
         this.logout();
         return false;
       }
