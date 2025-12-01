@@ -18,6 +18,10 @@ interface User {
   full_name: string;
   role_id: number;
   role_name: string;
+  company_id?: number;
+  company_name?: string;
+  department_id?: number;
+  department_name?: string;
   is_blocked: boolean;
   created_at: string;
   last_login?: string;
@@ -29,11 +33,28 @@ interface Role {
   description: string;
 }
 
+interface Company {
+  id: number;
+  name: string;
+  is_active: boolean;
+}
+
+interface Department {
+  id: number;
+  company_id: number;
+  name: string;
+  is_active: boolean;
+}
+
+const COMPANIES_API_URL = 'https://functions.poehali.dev/227369fe-07ca-4f0c-b8ee-f647263e78d9';
+
 export default function UsersAdmin() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -44,12 +65,23 @@ export default function UsersAdmin() {
     full_name: '',
     password: '',
     role_id: '',
+    company_id: '',
+    department_id: '',
   });
 
   useEffect(() => {
     fetchUsers();
     fetchRoles();
+    fetchCompanies();
   }, []);
+
+  useEffect(() => {
+    if (formData.company_id) {
+      fetchDepartments(parseInt(formData.company_id));
+    } else {
+      setDepartments([]);
+    }
+  }, [formData.company_id]);
 
   const fetchUsers = async () => {
     try {
@@ -81,6 +113,42 @@ export default function UsersAdmin() {
     }
   };
 
+  const fetchCompanies = async () => {
+    try {
+      const response = await fetch(COMPANIES_API_URL, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-Token': authService.getSessionToken() || '',
+        },
+        body: JSON.stringify({ entity_type: 'company' }),
+      });
+      const data = await response.json();
+      if (data.companies) setCompanies(data.companies.filter((c: Company) => c.is_active));
+    } catch (error) {
+      console.error('Failed to fetch companies:', error);
+    }
+  };
+
+  const fetchDepartments = async (company_id: number) => {
+    try {
+      const response = await fetch(COMPANIES_API_URL, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-Token': authService.getSessionToken() || '',
+        },
+        body: JSON.stringify({ entity_type: 'department', company_id }),
+      });
+      const data = await response.json();
+      if (data.departments) {
+        setDepartments(data.departments.filter((d: Department) => d.is_active && d.company_id === company_id));
+      }
+    } catch (error) {
+      console.error('Failed to fetch departments:', error);
+    }
+  };
+
   const handleCreateUser = async () => {
     try {
       const response = await fetch(USERS_API_URL, {
@@ -92,13 +160,15 @@ export default function UsersAdmin() {
         body: JSON.stringify({
           ...formData,
           role_id: parseInt(formData.role_id),
+          company_id: formData.company_id ? parseInt(formData.company_id) : undefined,
+          department_id: formData.department_id ? parseInt(formData.department_id) : undefined,
         }),
       });
 
       if (response.ok) {
         toast({ title: 'Успех', description: 'Пользователь создан' });
         setShowCreateDialog(false);
-        setFormData({ username: '', email: '', full_name: '', password: '', role_id: '' });
+        setFormData({ username: '', email: '', full_name: '', password: '', role_id: '', company_id: '', department_id: '' });
         fetchUsers();
       } else {
         const error = await response.json();
@@ -179,6 +249,8 @@ export default function UsersAdmin() {
                         <p className="text-sm text-muted-foreground">@{user.username} • {user.email}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <Badge variant="secondary">{user.role_name}</Badge>
+                          {user.company_name && <Badge variant="outline">{user.company_name}</Badge>}
+                          {user.department_name && <Badge variant="outline">{user.department_name}</Badge>}
                           {user.is_blocked && <Badge variant="destructive">Заблокирован</Badge>}
                         </div>
                       </div>
@@ -255,6 +327,45 @@ export default function UsersAdmin() {
                   {roles.map((role) => (
                     <SelectItem key={role.id} value={role.id.toString()}>
                       {role.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="company">Компания</Label>
+              <Select 
+                value={formData.company_id} 
+                onValueChange={(value) => {
+                  setFormData({ ...formData, company_id: value, department_id: '' });
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите компанию" />
+                </SelectTrigger>
+                <SelectContent>
+                  {companies.map((company) => (
+                    <SelectItem key={company.id} value={company.id.toString()}>
+                      {company.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="department">Подразделение</Label>
+              <Select 
+                value={formData.department_id} 
+                onValueChange={(value) => setFormData({ ...formData, department_id: value })}
+                disabled={!formData.company_id}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите подразделение" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map((department) => (
+                    <SelectItem key={department.id} value={department.id.toString()}>
+                      {department.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -792,6 +792,10 @@ export default function Index() {
                     <Icon name="Shield" size={16} className="mr-2" />
                     Роли и права
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/admin/companies')}>
+                    <Icon name="Building2" size={16} className="mr-2" />
+                    Компании и подразделения
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/admin/audit')}>
                     <Icon name="FileText" size={16} className="mr-2" />
                     Журнал аудита

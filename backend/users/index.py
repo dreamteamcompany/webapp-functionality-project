@@ -113,10 +113,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if user_id:
                 cur.execute('''
                     SELECT u.id, u.username, u.email, u.full_name, u.role_id, u.is_blocked,
-                           u.created_at, u.updated_at, u.last_login,
-                           r.name as role_name, r.description as role_description
+                           u.created_at, u.updated_at, u.last_login, u.company_id, u.department_id,
+                           r.name as role_name, r.description as role_description,
+                           c.name as company_name, d.name as department_name
                     FROM users u
                     LEFT JOIN roles r ON u.role_id = r.id
+                    LEFT JOIN companies c ON u.company_id = c.id
+                    LEFT JOIN departments d ON u.department_id = d.id
                     WHERE u.id = %s
                 ''', (user_id,))
                 
@@ -141,9 +144,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             else:
                 cur.execute('''
                     SELECT u.id, u.username, u.email, u.full_name, u.role_id, u.is_blocked,
-                           u.created_at, u.last_login,
-                           r.name as role_name
+                           u.created_at, u.last_login, u.company_id, u.department_id,
+                           r.name as role_name, c.name as company_name, d.name as department_name
                     FROM users u
+                    LEFT JOIN companies c ON u.company_id = c.id
+                    LEFT JOIN departments d ON u.department_id = d.id
                     LEFT JOIN roles r ON u.role_id = r.id
                     ORDER BY u.created_at DESC
                 ''')
@@ -175,6 +180,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             password = body_data.get('password', '')
             full_name = body_data.get('full_name', '').strip()
             role_id = body_data.get('role_id')
+            company_id = body_data.get('company_id')
+            department_id = body_data.get('department_id')
             
             if not username or not email or not password or not full_name:
                 return {
@@ -191,10 +198,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             try:
                 cur.execute('''
-                    INSERT INTO users (username, email, password_hash, full_name, role_id, created_by)
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                    RETURNING id, username, email, full_name, role_id, is_blocked, created_at
-                ''', (username, email, password_hash, full_name, role_id, current_user['id']))
+                    INSERT INTO users (username, email, password_hash, full_name, role_id, company_id, department_id, created_by)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id, username, email, full_name, role_id, company_id, department_id, is_blocked, created_at
+                ''', (username, email, password_hash, full_name, role_id, company_id, department_id, current_user['id']))
                 
                 new_user = dict(cur.fetchone())
                 

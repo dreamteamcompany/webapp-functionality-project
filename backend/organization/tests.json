@@ -1,0 +1,32 @@
+{
+  "tests": [
+    {
+      "name": "Get companies without auth",
+      "method": "GET",
+      "path": "/",
+      "body": {
+        "entity_type": "company"
+      },
+      "expectedStatus": 401
+    },
+    {
+      "name": "Get departments without auth",
+      "method": "GET",
+      "path": "/",
+      "body": {
+        "entity_type": "department"
+      },
+      "expectedStatus": 401
+    },
+    {
+      "name": "Create company without auth",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "entity_type": "company",
+        "name": "Test Company"
+      },
+      "expectedStatus": 401
+    }
+  ]
+}
