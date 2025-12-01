@@ -1,9 +1,9 @@
 {
   "tests": [
     {
-      "name": "Get progress without auth",
+      "name": "Get courses without auth",
       "method": "GET",
-      "path": "/",
+      "path": "/?resource=courses",
       "expectedStatus": 401,
       "expectedBody": {
         "error": "Unauthorized"
@@ -11,12 +11,9 @@
       "bodyMatcher": "partial"
     },
     {
-      "name": "Start course without auth",
-      "method": "POST",
-      "path": "/",
-      "body": {
-        "item_id": 1
-      },
+      "name": "Get trainers without auth",
+      "method": "GET",
+      "path": "/?resource=trainers",
       "expectedStatus": 401,
       "expectedBody": {
         "error": "Unauthorized"
