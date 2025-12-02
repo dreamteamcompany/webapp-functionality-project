@@ -749,8 +749,8 @@ export default function Index() {
           {mockLeaderboard.slice(3).map((entry, index) => (
             <div 
               key={entry.id} 
-              className={`flex items-center gap-4 p-4 rounded-lg transition-all hover:shadow-md ${
-                index === 0 ? 'bg-primary/5 border-2 border-primary' : 'bg-secondary/30 hover:bg-secondary/50'
+              className={`flex items-center gap-4 p-4 rounded-lg transition-all hover:shadow-md border ${
+                index === 0 ? 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800' : 'bg-card hover:bg-accent/50 border-border'
               }`}
             >
               <div className="flex items-center justify-center w-10 h-10 rounded-full bg-background border-2 font-bold text-muted-foreground">
