@@ -1073,6 +1073,184 @@ export default function Index() {
         </Card>
       </div>
 
+      {/* Level Progress Forecast */}
+      <div className="mb-8">
+        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <Icon name="Rocket" size={20} />
+          Прогноз достижения следующего уровня
+        </h3>
+        <Card className="p-6 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border-indigo-500/20">
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+            <div className="flex-shrink-0">
+              <div className="w-24 h-24 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-white text-3xl font-bold shadow-lg">
+                7
+              </div>
+              <p className="text-center text-sm text-muted-foreground mt-2">Текущий уровень</p>
+            </div>
+            
+            <div className="flex-1 space-y-4 w-full">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold">Прогресс до уровня 8</span>
+                  <span className="text-sm font-medium">2150 / 2500 баллов</span>
+                </div>
+                <Progress value={86} className="h-3" />
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-indigo-500/20 rounded-lg flex items-center justify-center">
+                    <Icon name="Target" size={16} className="text-indigo-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Осталось</p>
+                    <p className="font-semibold">350 баллов</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                    <Icon name="Calendar" size={16} className="text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Прогноз</p>
+                    <p className="font-semibold">~3 дня</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-pink-500/20 rounded-lg flex items-center justify-center">
+                    <Icon name="Zap" size={16} className="text-pink-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Темп</p>
+                    <p className="font-semibold">120 б/день</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2 p-3 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
+                <Icon name="Lightbulb" size={18} className="text-indigo-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm">
+                  <p className="font-medium mb-1">Совет от AI:</p>
+                  <p className="text-muted-foreground">
+                    Завершите 2 курса и пройдите 1 тренажер с врачом, чтобы достичь уровня 8 быстрее. 
+                    Это даст вам +400 баллов!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Comparison with Colleagues */}
+      <div className="mb-8">
+        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <Icon name="Users" size={20} />
+          Сравнение с коллегами
+        </h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Your Position */}
+          <Card className="p-6">
+            <h4 className="font-semibold mb-4 flex items-center gap-2">
+              <Icon name="TrendingUp" size={18} className="text-green-600" />
+              Ваша позиция в команде
+            </h4>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 bg-yellow-50/50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-yellow-500/20 rounded-full flex items-center justify-center font-bold text-yellow-700">
+                    #4
+                  </div>
+                  <div>
+                    <p className="font-semibold">Вы</p>
+                    <p className="text-sm text-muted-foreground">Администратор</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-xl font-bold text-primary">2150</p>
+                  <p className="text-xs text-muted-foreground">баллов</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">До топ-3:</p>
+                <div className="space-y-2">
+                  {[
+                    { rank: 3, name: 'Елена Иванова', points: 2800, gap: 650 },
+                    { rank: 2, name: 'Мария Петрова', points: 3200, gap: 1050 },
+                    { rank: 1, name: 'Анна Смирнова', points: 3500, gap: 1350 },
+                  ].map((leader, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-sm p-2 bg-secondary/50 rounded">
+                      <div className="flex items-center gap-2">
+                        <span className="w-6 h-6 bg-background rounded-full flex items-center justify-center text-xs font-bold">
+                          {leader.rank}
+                        </span>
+                        <span>{leader.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">{leader.points}</span>
+                        <Badge variant="outline" className="text-xs text-orange-600">
+                          -{leader.gap}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Category Comparison */}
+          <Card className="p-6">
+            <h4 className="font-semibold mb-4 flex items-center gap-2">
+              <Icon name="BarChart3" size={18} className="text-blue-600" />
+              Сравнение по категориям
+            </h4>
+            <div className="space-y-4">
+              {[
+                { name: 'Продажи', yourScore: 92, avgScore: 78, color: 'blue', better: true },
+                { name: 'Сервис', yourScore: 88, avgScore: 82, color: 'green', better: true },
+                { name: 'Коммуникация', yourScore: 85, avgScore: 80, color: 'purple', better: true },
+                { name: 'Техническая часть', yourScore: 78, avgScore: 85, color: 'orange', better: false },
+              ].map((category, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium">{category.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Средний: {category.avgScore}%</span>
+                      <Badge variant="outline" className={`text-xs ${category.better ? 'text-green-600' : 'text-orange-600'}`}>
+                        {category.better ? '+' : ''}{category.yourScore - category.avgScore}%
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="relative h-6 bg-secondary rounded-lg overflow-hidden">
+                    <div 
+                      className={`absolute inset-y-0 left-0 bg-${category.color}-500/30 border-r-2 border-${category.color}-500`}
+                      style={{ width: `${category.avgScore}%` }}
+                    />
+                    <div 
+                      className={`absolute inset-y-0 left-0 bg-gradient-to-r from-${category.color}-500 to-${category.color}-600 flex items-center justify-end pr-2`}
+                      style={{ width: `${category.yourScore}%` }}
+                    >
+                      <span className="text-xs font-bold text-white">{category.yourScore}%</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 pt-4 border-t">
+              <div className="flex items-center gap-2 text-sm">
+                <Icon name="Award" size={16} className="text-yellow-600" />
+                <span className="font-medium">Вы опережаете 71% коллег по общим показателям</span>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+
       {/* Performance by Category */}
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4">Результаты по категориям</h3>
