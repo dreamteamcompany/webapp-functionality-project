@@ -6,6 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import Icon from '@/components/ui/icon';
 import { AdminSimulator, SIMULATOR_SCENARIOS, DialogueChoice } from '@/lib/adminSimulator';
+import { achievementSystem, SIMULATOR_ACHIEVEMENTS, UnlockedAchievement } from '@/lib/simulatorAchievements';
+import AchievementNotification from './AchievementNotification';
+import AchievementsDialog from './AchievementsDialog';
 
 interface AdminSimulatorDialogProps {
   open: boolean;
@@ -17,7 +20,18 @@ export default function AdminSimulatorDialog({ open, onClose }: AdminSimulatorDi
   const [simulator, setSimulator] = useState<AdminSimulator | null>(null);
   const [currentChoices, setCurrentChoices] = useState<DialogueChoice[]>([]);
   const [showExplanation, setShowExplanation] = useState<string | null>(null);
+  const [newAchievements, setNewAchievements] = useState<UnlockedAchievement[]>([]);
+  const [showAchievements, setShowAchievements] = useState(false);
+  const [currentNotification, setCurrentNotification] = useState<UnlockedAchievement | null>(null);
   const dialogueEndRef = useRef<HTMLDivElement>(null);
+
+  // Показываем уведомления о новых достижениях по одному
+  useEffect(() => {
+    if (newAchievements.length > 0 && !currentNotification) {
+      setCurrentNotification(newAchievements[0]);
+      setNewAchievements(prev => prev.slice(1));
+    }
+  }, [newAchievements, currentNotification]);
 
   useEffect(() => {
     if (simulator) {
@@ -33,6 +47,8 @@ export default function AdminSimulatorDialog({ open, onClose }: AdminSimulatorDi
     setSelectedScenario(scenarioId);
     setSimulator(new AdminSimulator(scenarioId));
     setShowExplanation(null);
+    setNewAchievements([]);
+    achievementSystem.startScenario(scenarioId);
   };
 
   const handleChoice = (choiceId: number) => {
@@ -41,7 +57,24 @@ export default function AdminSimulatorDialog({ open, onClose }: AdminSimulatorDi
     const choice = currentChoices.find(c => c.id === choiceId);
     if (!choice) return;
 
+    // Записываем выбор в систему достижений
+    achievementSystem.recordChoice(choice.type);
+
     simulator.makeChoice(choiceId);
+    
+    // Проверяем завершение сценария
+    const state = simulator.getState();
+    if (state.isCompleted && state.finalScore && selectedScenario) {
+      const unlocked = achievementSystem.completeScenario(
+        selectedScenario,
+        state.finalScore,
+        state.parameters
+      );
+      
+      if (unlocked.length > 0) {
+        setNewAchievements(unlocked);
+      }
+    }
     
     // Форсируем ре-рендер через изменение состояния
     setCurrentChoices([...simulator.getCurrentChoices()]);
@@ -105,6 +138,37 @@ export default function AdminSimulatorDialog({ open, onClose }: AdminSimulatorDi
               Практикуйте навыки общения с пациентами в реалистичных сценариях
             </p>
           </DialogHeader>
+
+          {/* Статистика достижений */}
+          <Card className="p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Прогресс достижений</p>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Icon name="Trophy" size={20} className="text-purple-600" />
+                    <span className="font-bold text-lg">
+                      {achievementSystem.getProgress().unlocked} / {achievementSystem.getProgress().total}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Icon name="Star" size={18} className="text-yellow-600" />
+                    <span className="font-semibold">
+                      {achievementSystem.getTotalPoints()} очков
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setShowAchievements(true)}>
+                <Icon name="Award" size={16} className="mr-2" />
+                Все достижения
+              </Button>
+            </div>
+            <Progress 
+              value={achievementSystem.getProgress().percentage} 
+              className="h-2 mt-3" 
+            />
+          </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
             {SIMULATOR_SCENARIOS.map((scenario) => {
@@ -278,14 +342,49 @@ export default function AdminSimulatorDialog({ open, onClose }: AdminSimulatorDi
                     {getScoreText(state.finalScore!)}
                   </p>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <Button onClick={handleRestart} variant="outline">
-                      <Icon name="RotateCcw" size={16} className="mr-2" />
-                      Другой сценарий
-                    </Button>
-                    <Button onClick={() => handleStartScenario(selectedScenario)}>
-                      <Icon name="Play" size={16} className="mr-2" />
-                      Повторить
+                  {/* Новые достижения */}
+                  {achievementSystem.getUnlockedAchievements().filter(a => a.scenarioId === selectedScenario).length > 0 && (
+                    <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg border border-yellow-500/20">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Icon name="Sparkles" size={18} className="text-yellow-600" />
+                        <span className="font-semibold text-yellow-700">Получено достижений:</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {achievementSystem.getUnlockedAchievements()
+                          .filter(a => a.scenarioId === selectedScenario)
+                          .map(unlocked => {
+                            const achievement = SIMULATOR_ACHIEVEMENTS.find(a => a.id === unlocked.achievementId);
+                            if (!achievement) return null;
+                            return (
+                              <Badge key={unlocked.achievementId} className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
+                                <Icon name={achievement.icon as any} size={12} className="mr-1" />
+                                {achievement.title}
+                              </Badge>
+                            );
+                          })
+                        }
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-4">
+                      <Button onClick={handleRestart} variant="outline">
+                        <Icon name="RotateCcw" size={16} className="mr-2" />
+                        Другой сценарий
+                      </Button>
+                      <Button onClick={() => handleStartScenario(selectedScenario)}>
+                        <Icon name="Play" size={16} className="mr-2" />
+                        Повторить
+                      </Button>
+                    </div>
+                    <Button 
+                      onClick={() => setShowAchievements(true)} 
+                      variant="outline" 
+                      className="w-full border-purple-500/30 hover:border-purple-500/50"
+                    >
+                      <Icon name="Trophy" size={16} className="mr-2" />
+                      Все достижения
                     </Button>
                   </div>
                 </div>
@@ -363,6 +462,18 @@ export default function AdminSimulatorDialog({ open, onClose }: AdminSimulatorDi
           </div>
         </div>
       </DialogContent>
+
+      {/* Уведомления о достижениях */}
+      <AchievementNotification
+        achievement={currentNotification}
+        onClose={() => setCurrentNotification(null)}
+      />
+
+      {/* Диалог со всеми достижениями */}
+      <AchievementsDialog
+        open={showAchievements}
+        onClose={() => setShowAchievements(false)}
+      />
     </Dialog>
   );
 }
