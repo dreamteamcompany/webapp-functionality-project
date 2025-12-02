@@ -30,23 +30,40 @@ export class VoiceRecorder {
       this.recognition.onresult = (event: any) => {
         let interimTranscript = '';
 
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript + ' ';
-          } else {
-            interimTranscript += transcript;
+        try {
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const result = event.results[i];
+            if (result && result[0] && result[0].transcript) {
+              const transcript = result[0].transcript;
+              if (result.isFinal) {
+                finalTranscript += transcript + ' ';
+              } else {
+                interimTranscript += transcript;
+              }
+            }
           }
-        }
 
-        if (this.options.onTranscript) {
-          this.options.onTranscript(finalTranscript + interimTranscript);
+          if (this.options.onTranscript) {
+            this.options.onTranscript(finalTranscript + interimTranscript);
+          }
+        } catch (error) {
+          console.error('Error processing speech results:', error);
         }
       };
 
       this.recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
-        if (this.options.onError) {
+        
+        if (event.error === 'network') {
+          console.warn('Network error in speech recognition - continuing with audio recording only');
+          return;
+        }
+        
+        if (event.error === 'no-speech') {
+          return;
+        }
+
+        if (this.options.onError && event.error !== 'aborted') {
           this.options.onError(new Error(event.error));
         }
       };
@@ -83,7 +100,11 @@ export class VoiceRecorder {
       this.isRecording = true;
 
       if (this.recognition) {
-        this.recognition.start();
+        try {
+          this.recognition.start();
+        } catch (error) {
+          console.warn('Speech recognition start failed, continuing with audio only:', error);
+        }
       }
     } catch (error) {
       console.error('Error starting recording:', error);
@@ -104,7 +125,11 @@ export class VoiceRecorder {
     }
 
     if (this.recognition) {
-      this.recognition.stop();
+      try {
+        this.recognition.stop();
+      } catch (error) {
+        console.warn('Error stopping speech recognition:', error);
+      }
     }
 
     this.isRecording = false;

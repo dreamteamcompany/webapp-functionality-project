@@ -128,12 +128,7 @@ export default function Index() {
           setVoiceResponse(text);
         },
         onError: (error) => {
-          toast({
-            title: 'Ошибка записи',
-            description: error.message,
-            variant: 'destructive',
-          });
-          setIsRecording(false);
+          console.warn('Voice recording error:', error);
         },
       });
     }
@@ -153,10 +148,19 @@ export default function Index() {
       setRecordingStartTime(Date.now());
       setVoiceResponse('');
       setVoiceAnalysis(null);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Failed to start recording:', error);
+      
+      let description = 'Не удалось получить доступ к микрофону';
+      if (error.name === 'NotAllowedError') {
+        description = 'Доступ к микрофону запрещен. Разрешите доступ в настройках браузера.';
+      } else if (error.name === 'NotFoundError') {
+        description = 'Микрофон не найден. Подключите микрофон и попробуйте снова.';
+      }
+      
       toast({
-        title: 'Ошибка доступа',
-        description: 'Не удалось получить доступ к микрофону',
+        title: 'Ошибка доступа к микрофону',
+        description,
         variant: 'destructive',
       });
     }
@@ -170,14 +174,27 @@ export default function Index() {
       const duration = (Date.now() - recordingStartTime) / 1000;
       const currentStep = mockVoiceSteps[currentVoiceStep];
       
-      if (voiceResponse && speechAnalyzerRef.current) {
-        const analysis = speechAnalyzerRef.current.analyzeTranscript(
-          voiceResponse,
-          currentStep.expectedKeywords,
-          duration
-        );
-        setVoiceAnalysis(analysis);
-      }
+      setTimeout(() => {
+        const finalResponse = voiceResponse || 'Не удалось распознать речь. Попробуйте еще раз.';
+        
+        if (!voiceResponse) {
+          setVoiceResponse(finalResponse);
+          toast({
+            title: 'Речь не распознана',
+            description: 'Попробуйте говорить громче и четче',
+            variant: 'destructive',
+          });
+        }
+        
+        if (finalResponse && speechAnalyzerRef.current) {
+          const analysis = speechAnalyzerRef.current.analyzeTranscript(
+            finalResponse,
+            currentStep.expectedKeywords,
+            duration
+          );
+          setVoiceAnalysis(analysis);
+        }
+      }, 500);
     }
   };
 
