@@ -888,6 +888,191 @@ export default function Index() {
         </div>
       </div>
 
+      {/* Weekly Progress Chart */}
+      <div className="mb-8">
+        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <Icon name="LineChart" size={20} />
+          График прогресса по неделям
+        </h3>
+        <Card className="p-6">
+          <div className="space-y-6">
+            {[
+              { week: 'Неделя 1', points: 350, courses: 1, tests: 2, hours: 4.5 },
+              { week: 'Неделя 2', points: 520, courses: 2, tests: 3, hours: 6.2 },
+              { week: 'Неделя 3', points: 680, courses: 1, tests: 4, hours: 7.8 },
+              { week: 'Неделя 4', points: 800, courses: 3, tests: 5, hours: 8.5 },
+            ].map((weekData, index) => {
+              const maxPoints = 800;
+              const percentage = (weekData.points / maxPoints) * 100;
+              
+              return (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="font-medium min-w-[90px]">{weekData.week}</span>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Icon name="Trophy" size={14} className="text-yellow-600" />
+                          {weekData.points} баллов
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Icon name="BookOpen" size={14} className="text-blue-600" />
+                          {weekData.courses} курсов
+                        </span>
+                        <span className="hidden sm:flex items-center gap-1">
+                          <Icon name="ClipboardCheck" size={14} className="text-green-600" />
+                          {weekData.tests} тестов
+                        </span>
+                        <span className="hidden md:flex items-center gap-1">
+                          <Icon name="Clock" size={14} className="text-purple-600" />
+                          {weekData.hours} ч
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="relative h-8 bg-secondary rounded-lg overflow-hidden">
+                    <div 
+                      className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500 flex items-center justify-end pr-3"
+                      style={{ width: `${percentage}%` }}
+                    >
+                      {percentage > 20 && (
+                        <span className="text-xs font-bold text-white">{weekData.points}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          
+          <div className="mt-6 pt-6 border-t">
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2">
+                <Icon name="TrendingUp" size={16} className="text-green-600" />
+                <span className="font-medium">Средний прирост: +128 баллов/неделю</span>
+              </div>
+              <Badge variant="outline" className="text-green-600">
+                <Icon name="ArrowUp" size={12} className="mr-1" />
+                +35% за месяц
+              </Badge>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Learning History */}
+      <div className="mb-8">
+        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <Icon name="History" size={20} />
+          История обучения
+        </h3>
+        <Card className="p-6">
+          <div className="space-y-4">
+            {[
+              {
+                date: 'Сегодня, 14:30',
+                type: 'course',
+                title: 'Завершен урок "Техники активных продаж"',
+                points: '+50',
+                icon: 'BookOpen',
+                color: 'blue',
+              },
+              {
+                date: 'Сегодня, 12:15',
+                type: 'quiz',
+                title: 'Пройден тест по работе с пациентами',
+                points: '+80',
+                score: '95%',
+                icon: 'ClipboardCheck',
+                color: 'green',
+              },
+              {
+                date: 'Вчера, 18:45',
+                type: 'trainer',
+                title: 'Завершен голосовой тренажер "Консультация"',
+                points: '+100',
+                icon: 'Mic',
+                color: 'purple',
+              },
+              {
+                date: 'Вчера, 16:20',
+                type: 'achievement',
+                title: 'Получено достижение "Знаток продаж"',
+                points: '+150',
+                icon: 'Award',
+                color: 'yellow',
+              },
+              {
+                date: '2 дня назад',
+                type: 'course',
+                title: 'Завершен курс "Работа с пациентами"',
+                points: '+200',
+                icon: 'BookOpen',
+                color: 'blue',
+              },
+              {
+                date: '3 дня назад',
+                type: 'trainer',
+                title: 'Практика с AI врачом: сценарий "Возражения"',
+                points: '+120',
+                success: '82%',
+                icon: 'Stethoscope',
+                color: 'pink',
+              },
+            ].map((activity, index) => {
+              const colorClasses = {
+                blue: 'bg-blue-500/10 text-blue-600',
+                green: 'bg-green-500/10 text-green-600',
+                purple: 'bg-purple-500/10 text-purple-600',
+                yellow: 'bg-yellow-500/10 text-yellow-600',
+                pink: 'bg-pink-500/10 text-pink-600',
+              };
+
+              return (
+                <div key={index} className="flex items-start gap-4 p-4 rounded-lg hover:bg-accent/50 transition-colors">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${colorClasses[activity.color as keyof typeof colorClasses]}`}>
+                    <Icon name={activity.icon as any} size={20} />
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium mb-1">{activity.title}</p>
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Icon name="Clock" size={12} />
+                        {activity.date}
+                      </span>
+                      {activity.score && (
+                        <span className="flex items-center gap-1 text-green-600">
+                          <Icon name="CheckCircle2" size={12} />
+                          Результат: {activity.score}
+                        </span>
+                      )}
+                      {activity.success && (
+                        <span className="flex items-center gap-1 text-purple-600">
+                          <Icon name="Target" size={12} />
+                          Успешность: {activity.success}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <Badge variant="outline" className="text-green-600 font-semibold flex-shrink-0">
+                    {activity.points}
+                  </Badge>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-6 pt-6 border-t text-center">
+            <Button variant="outline" className="w-full sm:w-auto">
+              <Icon name="ChevronDown" size={16} className="mr-2" />
+              Показать больше
+            </Button>
+          </div>
+        </Card>
+      </div>
+
       {/* Performance by Category */}
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4">Результаты по категориям</h3>
