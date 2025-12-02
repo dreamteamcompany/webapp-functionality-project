@@ -642,27 +642,139 @@ export default function Index() {
             <Badge>5 сценариев</Badge>
           </div>
         </Card>
+      </div>
+    </div>
+  );
 
+  const renderGames = () => (
+    <div>
+      <h2 className="text-3xl font-bold mb-6">Обучающие игры</h2>
+      <p className="text-muted-foreground mb-8">Развивайте навыки через геймифицированные сценарии с системой достижений</p>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Admin Simulator */}
         <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer border-2 border-purple-500/30 bg-gradient-to-br from-purple-500/5 to-pink-500/5" onClick={() => setSimulatorDialog(true)}>
           <div className="text-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <Icon name="Users" size={32} className="text-white" />
+            <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Icon name="Users" size={40} className="text-white" />
             </div>
             <div className="flex items-center justify-center gap-2 mb-2">
               <h3 className="text-xl font-semibold">Симулятор администратора</h3>
               <Badge variant="default" className="bg-gradient-to-r from-purple-500 to-pink-500">
                 <Icon name="Sparkles" size={12} className="mr-1" />
-                НОВОЕ
+                ХИТ
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
-              Игра с реалистичными диалогами и оценкой 5 навыков
+              Реалистичные диалоги с пациентами. Оценка 5 навыков. Система достижений.
             </p>
-            <Badge className="bg-purple-500/10 text-purple-600">7 сценариев</Badge>
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              <Badge className="bg-purple-500/10 text-purple-600">7 сценариев</Badge>
+              <Badge className="bg-pink-500/10 text-pink-600">25 достижений</Badge>
+            </div>
+            <div className="mt-4 pt-4 border-t">
+              <div className="grid grid-cols-5 gap-2 text-xs text-center">
+                <div>
+                  <Icon name="Heart" size={16} className="mx-auto mb-1 text-red-500" />
+                  <span className="text-muted-foreground">Эмпатия</span>
+                </div>
+                <div>
+                  <Icon name="Briefcase" size={16} className="mx-auto mb-1 text-blue-500" />
+                  <span className="text-muted-foreground">Профессионализм</span>
+                </div>
+                <div>
+                  <Icon name="Zap" size={16} className="mx-auto mb-1 text-yellow-500" />
+                  <span className="text-muted-foreground">Эффективность</span>
+                </div>
+                <div>
+                  <Icon name="TrendingUp" size={16} className="mx-auto mb-1 text-green-500" />
+                  <span className="text-muted-foreground">Продажи</span>
+                </div>
+                <div>
+                  <Icon name="Shield" size={16} className="mx-auto mb-1 text-purple-500" />
+                  <span className="text-muted-foreground">Конфликты</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Coming Soon Cards */}
+        <Card className="p-6 opacity-60 relative overflow-hidden">
+          <div className="absolute top-4 right-4">
+            <Badge variant="outline">Скоро</Badge>
+          </div>
+          <div className="text-center">
+            <div className="w-20 h-20 bg-blue-500/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+              <Icon name="Phone" size={40} className="text-blue-600" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Телефонные переговоры</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Практика входящих звонков с разными типами пациентов
+            </p>
+            <Badge variant="outline">В разработке</Badge>
+          </div>
+        </Card>
+
+        <Card className="p-6 opacity-60 relative overflow-hidden">
+          <div className="absolute top-4 right-4">
+            <Badge variant="outline">Скоро</Badge>
+          </div>
+          <div className="text-center">
+            <div className="w-20 h-20 bg-orange-500/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+              <Icon name="AlertCircle" size={40} className="text-orange-600" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Кризис-менеджмент</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Управление сложными ситуациями и конфликтами в клинике
+            </p>
+            <Badge variant="outline">В разработке</Badge>
           </div>
         </Card>
       </div>
+
+      {/* Преимущества геймификации */}
+      <Card className="mt-8 p-6 bg-gradient-to-r from-purple-500/5 to-pink-500/5 border-purple-500/20">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Icon name="Sparkles" size={20} className="text-purple-600" />
+          Почему обучающие игры эффективны?
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Icon name="Brain" size={20} className="text-purple-600" />
+            </div>
+            <div>
+              <h4 className="font-semibold mb-1">Практика без риска</h4>
+              <p className="text-sm text-muted-foreground">
+                Отрабатывайте сложные ситуации в безопасной среде
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Icon name="Target" size={20} className="text-purple-600" />
+            </div>
+            <div>
+              <h4 className="font-semibold mb-1">Мгновенная обратная связь</h4>
+              <p className="text-sm text-muted-foreground">
+                Получайте оценку каждого решения и учитесь на ошибках
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Icon name="Trophy" size={20} className="text-purple-600" />
+            </div>
+            <div>
+              <h4 className="font-semibold mb-1">Мотивация через достижения</h4>
+              <p className="text-sm text-muted-foreground">
+                Зарабатывайте награды и отслеживайте прогресс
+              </p>
+            </div>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 
@@ -1548,7 +1660,7 @@ export default function Index() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-7 lg:w-auto lg:inline-grid">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <Icon name="LayoutDashboard" size={16} />
               <span className="hidden sm:inline">Главная</span>
@@ -1560,6 +1672,10 @@ export default function Index() {
             <TabsTrigger value="trainers" className="flex items-center gap-2">
               <Icon name="Dumbbell" size={16} />
               <span className="hidden sm:inline">Тренажеры</span>
+            </TabsTrigger>
+            <TabsTrigger value="games" className="flex items-center gap-2">
+              <Icon name="Gamepad2" size={16} />
+              <span className="hidden sm:inline">Игры</span>
             </TabsTrigger>
             <TabsTrigger value="analytics" className="flex items-center gap-2">
               <Icon name="BarChart3" size={16} />
@@ -1578,6 +1694,7 @@ export default function Index() {
           <TabsContent value="dashboard">{renderDashboard()}</TabsContent>
           <TabsContent value="courses">{renderCourses()}</TabsContent>
           <TabsContent value="trainers">{renderTrainers()}</TabsContent>
+          <TabsContent value="games">{renderGames()}</TabsContent>
           <TabsContent value="analytics">{renderAnalytics()}</TabsContent>
           <TabsContent value="achievements">{renderAchievements()}</TabsContent>
           <TabsContent value="leaderboard">{renderLeaderboard()}</TabsContent>
