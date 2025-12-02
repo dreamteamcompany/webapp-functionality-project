@@ -9,6 +9,7 @@ import { QuizQuestion, VoiceStep } from './types';
 import { mockQuizQuestions, mockVoiceSteps } from './mockData';
 import VoiceVisualizer from './VoiceVisualizer';
 import { SpeechAnalysisResult } from '@/lib/speechAnalyzer';
+import { ConversationAnalysis } from '@/lib/patientAI';
 
 interface TrainerDialogsProps {
   quizDialog: boolean;
@@ -26,9 +27,13 @@ interface TrainerDialogsProps {
   voiceAnalysis: SpeechAnalysisResult | null;
   doctorScenario: string;
   setDoctorScenario: (scenario: string) => void;
-  doctorMessages: Array<{ role: 'user' | 'doctor'; content: string }>;
+  doctorMessages: Array<{ role: 'admin' | 'patient'; content: string }>;
   doctorInput: string;
   setDoctorInput: (input: string) => void;
+  conversationAnalysis: ConversationAnalysis | null;
+  handleFinishConversation: () => void;
+  handleRestartConversation: () => void;
+  handleChangeScenario: (scenario: 'consultation' | 'treatment' | 'emergency') => void;
   handleQuizAnswer: (questionIndex: number, answerIndex: number) => void;
   handleNextQuizQuestion: () => void;
   handlePrevQuizQuestion: () => void;
@@ -58,6 +63,7 @@ export default function TrainerDialogs({
   doctorMessages,
   doctorInput,
   setDoctorInput,
+  conversationAnalysis,
   handleQuizAnswer,
   handleNextQuizQuestion,
   handlePrevQuizQuestion,
@@ -66,6 +72,9 @@ export default function TrainerDialogs({
   handleStopRecording,
   handleNextVoiceStep,
   handleSendDoctorMessage,
+  handleFinishConversation,
+  handleRestartConversation,
+  handleChangeScenario,
 }: TrainerDialogsProps) {
   return (
     <>
@@ -271,63 +280,191 @@ export default function TrainerDialogs({
       <Dialog open={doctorDialog} onOpenChange={setDoctorDialog}>
         <DialogContent className="max-w-4xl max-h-[80vh]">
           <DialogHeader>
-            <DialogTitle>Тренажер с врачом</DialogTitle>
+            <DialogTitle>Тренажер общения с пациентом</DialogTitle>
             <DialogDescription>
-              Симуляция реальных диалогов с врачами и пациентами
+              Практика реальных диалогов с виртуальным пациентом
             </DialogDescription>
           </DialogHeader>
 
-          <Tabs value={doctorScenario} onValueChange={setDoctorScenario} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="consultation">Консультация</TabsTrigger>
-              <TabsTrigger value="treatment">План лечения</TabsTrigger>
-              <TabsTrigger value="emergency">Экстренный случай</TabsTrigger>
-            </TabsList>
+          {!conversationAnalysis ? (
+            <>
+              <Tabs value={doctorScenario} onValueChange={(val) => handleChangeScenario(val as any)} className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="consultation">Консультация</TabsTrigger>
+                  <TabsTrigger value="treatment">План лечения</TabsTrigger>
+                  <TabsTrigger value="emergency">Экстренный случай</TabsTrigger>
+                </TabsList>
 
-            <TabsContent value={doctorScenario} className="space-y-4">
-              <div className="h-[400px] overflow-y-auto border rounded-lg p-4 space-y-4">
-                {doctorMessages.length === 0 ? (
-                  <div className="text-center text-muted-foreground py-12">
-                    Начните диалог с врачом
-                  </div>
-                ) : (
-                  doctorMessages.map((message, index) => (
-                    <div
-                      key={index}
-                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={`max-w-[70%] p-3 rounded-lg ${
-                          message.role === 'user'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-secondary'
-                        }`}
-                      >
-                        <p className="text-sm">{message.content}</p>
+                <TabsContent value={doctorScenario} className="space-y-4">
+                  <div className="h-[400px] overflow-y-auto border rounded-lg p-4 space-y-4 bg-muted/20">
+                    {doctorMessages.length === 0 ? (
+                      <div className="text-center py-12 space-y-4">
+                        <div className="text-muted-foreground">
+                          <Icon name="MessageCircle" size={48} className="mx-auto mb-4 text-muted-foreground" />
+                          <p className="text-lg font-medium">Начните диалог с пациентом</p>
+                          <p className="text-sm mt-2">Напишите приветствие и представьтесь</p>
+                        </div>
                       </div>
+                    ) : (
+                      doctorMessages.map((message, index) => (
+                        <div
+                          key={index}
+                          className={`flex ${message.role === 'admin' ? 'justify-end' : 'justify-start'}`}
+                        >
+                          <div
+                            className={`max-w-[70%] p-3 rounded-lg ${
+                              message.role === 'admin'
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-card border shadow-sm'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <Icon 
+                                name={message.role === 'admin' ? 'UserCircle' : 'User'} 
+                                size={14} 
+                                className={message.role === 'admin' ? '' : 'text-muted-foreground'}
+                              />
+                              <span className="text-xs font-medium">
+                                {message.role === 'admin' ? 'Вы (Администратор)' : 'Пациент'}
+                              </span>
+                            </div>
+                            <p className="text-sm">{message.content}</p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Введите ваше сообщение..."
+                        value={doctorInput}
+                        onChange={(e) => setDoctorInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendDoctorMessage();
+                          }
+                        }}
+                        disabled={conversationAnalysis !== null}
+                      />
+                      <Button onClick={handleSendDoctorMessage} disabled={!doctorInput.trim()}>
+                        <Icon name="Send" size={16} />
+                      </Button>
                     </div>
-                  ))
-                )}
+                    
+                    {doctorMessages.length >= 6 && (
+                      <div className="flex justify-end">
+                        <Button onClick={handleFinishConversation} variant="outline" size="sm">
+                          <Icon name="CheckCircle" size={16} className="mr-2" />
+                          Завершить и получить оценку
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </>
+          ) : (
+            <div className="space-y-6 py-4">
+              <div className="text-center space-y-4">
+                <div className={`w-24 h-24 mx-auto rounded-full flex items-center justify-center ${
+                  conversationAnalysis.overallScore >= 70 ? 'bg-green-500/10' : 
+                  conversationAnalysis.overallScore >= 50 ? 'bg-yellow-500/10' : 'bg-red-500/10'
+                }`}>
+                  <span className="text-4xl font-bold" style={{ 
+                    color: conversationAnalysis.overallScore >= 70 ? '#22c55e' : 
+                           conversationAnalysis.overallScore >= 50 ? '#eab308' : '#ef4444'
+                  }}>
+                    {conversationAnalysis.overallScore}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold mb-2">
+                    {conversationAnalysis.overallScore >= 70 ? 'Отличная работа!' : 
+                     conversationAnalysis.overallScore >= 50 ? 'Хорошо, но есть что улучшить' : 'Нужно больше практики'}
+                  </h3>
+                  <p className="text-muted-foreground">Результаты анализа диалога</p>
+                </div>
               </div>
 
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Введите ваше сообщение..."
-                  value={doctorInput}
-                  onChange={(e) => setDoctorInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendDoctorMessage();
-                    }
-                  }}
-                />
-                <Button onClick={handleSendDoctorMessage} disabled={!doctorInput.trim()}>
-                  <Icon name="Send" size={16} />
+              <div className="grid grid-cols-3 gap-4">
+                <Card className="p-4 text-center">
+                  <div className="text-2xl font-bold text-blue-600">{conversationAnalysis.empathyScore}</div>
+                  <div className="text-sm text-muted-foreground mt-1">Эмпатия</div>
+                </Card>
+                <Card className="p-4 text-center">
+                  <div className="text-2xl font-bold text-green-600">{conversationAnalysis.clarityScore}</div>
+                  <div className="text-sm text-muted-foreground mt-1">Ясность</div>
+                </Card>
+                <Card className="p-4 text-center">
+                  <div className="text-2xl font-bold text-purple-600">{conversationAnalysis.professionalismScore}</div>
+                  <div className="text-sm text-muted-foreground mt-1">Профессионализм</div>
+                </Card>
+              </div>
+
+              {conversationAnalysis.goodPoints.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-green-600 flex items-center gap-2">
+                    <Icon name="ThumbsUp" size={16} />
+                    Сильные стороны
+                  </h4>
+                  <ul className="space-y-1">
+                    {conversationAnalysis.goodPoints.map((point, idx) => (
+                      <li key={idx} className="text-sm flex items-start gap-2">
+                        <Icon name="Check" size={14} className="text-green-600 mt-1" />
+                        <span>{point}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {conversationAnalysis.missedOpportunities.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-orange-600 flex items-center gap-2">
+                    <Icon name="AlertCircle" size={16} />
+                    Упущенные моменты
+                  </h4>
+                  <ul className="space-y-1">
+                    {conversationAnalysis.missedOpportunities.map((point, idx) => (
+                      <li key={idx} className="text-sm flex items-start gap-2">
+                        <Icon name="X" size={14} className="text-orange-600 mt-1" />
+                        <span>{point}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {conversationAnalysis.recommendations.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-blue-600 flex items-center gap-2">
+                    <Icon name="Lightbulb" size={16} />
+                    Рекомендации
+                  </h4>
+                  <ul className="space-y-1">
+                    {conversationAnalysis.recommendations.map((rec, idx) => (
+                      <li key={idx} className="text-sm flex items-start gap-2">
+                        <Icon name="ArrowRight" size={14} className="text-blue-600 mt-1" />
+                        <span>{rec}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={handleRestartConversation}>
+                  Попробовать снова
+                </Button>
+                <Button onClick={() => setDoctorDialog(false)}>
+                  Закрыть
                 </Button>
               </div>
-            </TabsContent>
-          </Tabs>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </>

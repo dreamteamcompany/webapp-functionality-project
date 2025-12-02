@@ -25,6 +25,7 @@ import TrainerDialogs from '@/components/dashboard/TrainerDialogs';
 import CourseDialog from '@/components/dashboard/CourseDialog';
 import VoiceRecorder from '@/lib/voiceRecorder';
 import SpeechAnalyzer, { SpeechAnalysisResult } from '@/lib/speechAnalyzer';
+import PatientAI, { ConversationAnalysis } from '@/lib/patientAI';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Index() {
@@ -50,9 +51,11 @@ export default function Index() {
   const voiceRecorderRef = useRef<VoiceRecorder | null>(null);
   const speechAnalyzerRef = useRef<SpeechAnalyzer>(new SpeechAnalyzer());
   const { toast } = useToast();
-  const [doctorScenario, setDoctorScenario] = useState('consultation');
-  const [doctorMessages, setDoctorMessages] = useState<Array<{ role: 'user' | 'doctor', content: string }>>([]);
+  const [doctorScenario, setDoctorScenario] = useState<'consultation' | 'treatment' | 'emergency'>('consultation');
+  const [doctorMessages, setDoctorMessages] = useState<Array<{ role: 'admin' | 'patient', content: string }>>([]);
   const [doctorInput, setDoctorInput] = useState('');
+  const [conversationAnalysis, setConversationAnalysis] = useState<ConversationAnalysis | null>(null);
+  const patientAIRef = useRef<PatientAI | null>(null);
   
   // Profile state
   const [profileName, setProfileName] = useState(currentUser?.full_name || '');
@@ -199,20 +202,42 @@ export default function Index() {
   };
 
   const handleSendDoctorMessage = () => {
-    if (doctorInput.trim()) {
-      setDoctorMessages([...doctorMessages, { role: 'user', content: doctorInput }]);
-      setDoctorInput('');
-      
-      setTimeout(() => {
-        const responses = [
-          'Хорошо, я понимаю вашу ситуацию. Давайте обсудим варианты лечения.',
-          'Отличный вопрос! В вашем случае я бы рекомендовал следующее...',
-          'Спасибо за информацию. Это поможет мне составить оптимальный план лечения.',
-        ];
-        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-        setDoctorMessages(prev => [...prev, { role: 'doctor', content: randomResponse }]);
-      }, 1000);
+    if (!doctorInput.trim()) return;
+
+    if (!patientAIRef.current) {
+      patientAIRef.current = new PatientAI(doctorScenario);
+      const initialResponse = patientAIRef.current.generateResponse('Здравствуйте');
+      setDoctorMessages([{ role: 'patient', content: initialResponse.message }]);
     }
+
+    setDoctorMessages(prev => [...prev, { role: 'admin', content: doctorInput }]);
+    const userMessage = doctorInput;
+    setDoctorInput('');
+    
+    setTimeout(() => {
+      if (patientAIRef.current) {
+        const response = patientAIRef.current.generateResponse(userMessage);
+        setDoctorMessages(prev => [...prev, { role: 'patient', content: response.message }]);
+      }
+    }, 800);
+  };
+
+  const handleFinishConversation = () => {
+    if (patientAIRef.current) {
+      const analysis = patientAIRef.current.analyzeConversation();
+      setConversationAnalysis(analysis);
+    }
+  };
+
+  const handleRestartConversation = () => {
+    setDoctorMessages([]);
+    setConversationAnalysis(null);
+    patientAIRef.current = null;
+  };
+
+  const handleChangeScenario = (newScenario: 'consultation' | 'treatment' | 'emergency') => {
+    setDoctorScenario(newScenario);
+    handleRestartConversation();
   };
 
   const handleSaveProfile = () => {
@@ -771,6 +796,7 @@ export default function Index() {
         doctorMessages={doctorMessages}
         doctorInput={doctorInput}
         setDoctorInput={setDoctorInput}
+        conversationAnalysis={conversationAnalysis}
         handleQuizAnswer={handleQuizAnswer}
         handleNextQuizQuestion={handleNextQuizQuestion}
         handlePrevQuizQuestion={handlePrevQuizQuestion}
@@ -779,6 +805,9 @@ export default function Index() {
         handleStopRecording={handleStopRecording}
         handleNextVoiceStep={handleNextVoiceStep}
         handleSendDoctorMessage={handleSendDoctorMessage}
+        handleFinishConversation={handleFinishConversation}
+        handleRestartConversation={handleRestartConversation}
+        handleChangeScenario={handleChangeScenario}
       />
 
       <CourseDialog
