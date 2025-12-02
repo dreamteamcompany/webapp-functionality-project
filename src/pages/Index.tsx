@@ -342,11 +342,11 @@ export default function Index() {
       </div>
 
       {/* AI Recommendations Card */}
-      <Card className="p-6 mb-6 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/20 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/my-learning')}>
+      <Card className="p-6 mb-6 bg-gradient-to-r from-brand/10 to-brand/5 border-brand/20 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/my-learning')}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center">
-              <Icon name="Sparkles" size={24} className="text-purple-600" />
+            <div className="w-12 h-12 bg-brand/20 rounded-full flex items-center justify-center">
+              <Icon name="Sparkles" size={24} className="text-brand" />
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-1">AI рекомендации для вас</h3>
@@ -361,8 +361,8 @@ export default function Index() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="p-6">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-              <Icon name="BookOpen" size={24} className="text-primary" />
+            <div className="w-12 h-12 bg-brand/10 rounded-lg flex items-center justify-center">
+              <Icon name="BookOpen" size={24} className="text-brand" />
             </div>
             <div>
               <p className="text-2xl font-bold">3</p>
@@ -653,14 +653,14 @@ export default function Index() {
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Admin Simulator */}
-        <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer border-2 border-purple-500/30 bg-gradient-to-br from-purple-500/5 to-pink-500/5" onClick={() => setSimulatorDialog(true)}>
+        <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer border-2 border-brand/30 bg-gradient-to-br from-brand/5 to-brand/10" onClick={() => setSimulatorDialog(true)}>
           <div className="text-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <div className="w-20 h-20 bg-gradient-to-br from-brand to-brand/80 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
               <Icon name="Users" size={40} className="text-white" />
             </div>
             <div className="flex items-center justify-center gap-2 mb-2">
               <h3 className="text-xl font-semibold">Симулятор администратора</h3>
-              <Badge variant="default" className="bg-gradient-to-r from-purple-500 to-pink-500">
+              <Badge variant="default" className="bg-brand">
                 <Icon name="Sparkles" size={12} className="mr-1" />
                 ХИТ
               </Badge>
@@ -669,8 +669,8 @@ export default function Index() {
               Реалистичные диалоги с пациентами. Оценка 5 навыков. Система достижений.
             </p>
             <div className="flex items-center justify-center gap-2 flex-wrap">
-              <Badge className="bg-purple-500/10 text-purple-600">7 сценариев</Badge>
-              <Badge className="bg-pink-500/10 text-pink-600">25 достижений</Badge>
+              <Badge className="bg-brand/10 text-brand">7 сценариев</Badge>
+              <Badge className="bg-brand/15 text-brand">25 достижений</Badge>
             </div>
             <div className="mt-4 pt-4 border-t">
               <div className="grid grid-cols-5 gap-2 text-xs text-center">
@@ -691,7 +691,7 @@ export default function Index() {
                   <span className="text-muted-foreground">Продажи</span>
                 </div>
                 <div>
-                  <Icon name="Shield" size={16} className="mx-auto mb-1 text-purple-500" />
+                  <Icon name="Shield" size={16} className="mx-auto mb-1 text-brand" />
                   <span className="text-muted-foreground">Конфликты</span>
                 </div>
               </div>
@@ -734,15 +734,15 @@ export default function Index() {
       </div>
 
       {/* Преимущества геймификации */}
-      <Card className="mt-8 p-6 bg-gradient-to-r from-purple-500/5 to-pink-500/5 border-purple-500/20">
+      <Card className="mt-8 p-6 bg-gradient-to-r from-brand/5 to-brand/10 border-brand/20">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Icon name="Sparkles" size={20} className="text-purple-600" />
+          <Icon name="Sparkles" size={20} className="text-brand" />
           Почему обучающие игры эффективны?
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
-              <Icon name="Brain" size={20} className="text-purple-600" />
+            <div className="w-10 h-10 bg-brand/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Icon name="Brain" size={20} className="text-brand" />
             </div>
             <div>
               <h4 className="font-semibold mb-1">Практика без риска</h4>
@@ -752,8 +752,8 @@ export default function Index() {
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
-              <Icon name="Target" size={20} className="text-purple-600" />
+            <div className="w-10 h-10 bg-brand/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Icon name="Target" size={20} className="text-brand" />
             </div>
             <div>
               <h4 className="font-semibold mb-1">Мгновенная обратная связь</h4>
@@ -763,8 +763,8 @@ export default function Index() {
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
-              <Icon name="Trophy" size={20} className="text-purple-600" />
+            <div className="w-10 h-10 bg-brand/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Icon name="Trophy" size={20} className="text-brand" />
             </div>
             <div>
               <h4 className="font-semibold mb-1">Мотивация через достижения</h4>
@@ -879,7 +879,7 @@ export default function Index() {
 
             <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveTab('courses')}>
               <div className="flex items-start justify-between mb-3">
-                <Badge variant="default" className="bg-gradient-to-r from-purple-500 to-pink-500">
+                <Badge variant="default" className="bg-brand">
                   <Icon name="Sparkles" size={12} className="mr-1" />
                   AI рекомендация
                 </Badge>
@@ -900,7 +900,7 @@ export default function Index() {
 
             <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setActiveTab('trainers')}>
               <div className="flex items-start justify-between mb-3">
-                <Badge variant="default" className="bg-gradient-to-r from-purple-500 to-pink-500">
+                <Badge variant="default" className="bg-brand">
                   <Icon name="Sparkles" size={12} className="mr-1" />
                   AI рекомендация
                 </Badge>
@@ -930,14 +930,14 @@ export default function Index() {
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Level Progress Forecast */}
-          <Card className="p-6 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border-indigo-500/20">
+          <Card className="p-6 bg-gradient-to-r from-brand/10 to-brand/5 border-brand/20">
             <h4 className="font-semibold mb-4 flex items-center gap-2">
               <Icon name="Rocket" size={18} />
               Прогноз достижения уровня 8
             </h4>
             <div className="flex items-center gap-6 mb-4">
               <div className="flex-shrink-0">
-                <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                <div className="w-20 h-20 bg-gradient-to-br from-brand to-brand/80 rounded-xl flex items-center justify-center text-white text-2xl font-bold shadow-lg">
                   7
                 </div>
                 <p className="text-center text-xs text-muted-foreground mt-2">Текущий</p>
@@ -967,8 +967,8 @@ export default function Index() {
               </div>
             </div>
 
-            <div className="flex items-start gap-2 p-3 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
-              <Icon name="Lightbulb" size={16} className="text-indigo-600 mt-0.5 flex-shrink-0" />
+            <div className="flex items-start gap-2 p-3 bg-brand/10 rounded-lg border border-brand/20">
+              <Icon name="Lightbulb" size={16} className="text-brand mt-0.5 flex-shrink-0" />
               <p className="text-xs text-muted-foreground">
                 Завершите 2 курса и 1 тренажер для +400 баллов и быстрого достижения уровня 8
               </p>
@@ -1307,16 +1307,16 @@ export default function Index() {
           AI рекомендации
         </h3>
         
-        <Card className="p-6 mb-6 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/20">
+        <Card className="p-6 mb-6 bg-gradient-to-r from-brand/10 to-brand/5 border-brand/20">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center flex-shrink-0">
-              <Icon name="Sparkles" size={24} className="text-purple-600" />
+            <div className="w-12 h-12 bg-brand/20 rounded-full flex items-center justify-center flex-shrink-0">
+              <Icon name="Sparkles" size={24} className="text-brand" />
             </div>
             <div className="flex-1">
               <h4 className="font-semibold mb-3">Персональные рекомендации</h4>
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
-                  <Icon name="TrendingUp" size={18} className="text-purple-600 mt-0.5 flex-shrink-0" />
+                  <Icon name="TrendingUp" size={18} className="text-brand mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-medium">Высокие результаты в продажах (92%)</p>
                     <p className="text-sm text-muted-foreground">Вы отлично справляетесь с техниками продаж. Рекомендуем перейти к продвинутым курсам по презентации лечения.</p>
@@ -1330,7 +1330,7 @@ export default function Index() {
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <Icon name="Target" size={18} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                  <Icon name="Target" size={18} className="text-brand mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-medium">Рекомендуем практику</p>
                     <p className="text-sm text-muted-foreground">Вы прошли 3 голосовых тренажера. Продолжайте практиковать сценарии работы с возражениями для закрепления навыков.</p>
@@ -1469,7 +1469,7 @@ export default function Index() {
               </div>
               
               <Avatar className="w-12 h-12">
-                <AvatarFallback className="bg-primary/10 text-primary">
+                <AvatarFallback className="bg-brand/10 text-brand">
                   {entry.avatar}
                 </AvatarFallback>
               </Avatar>
@@ -1525,7 +1525,7 @@ export default function Index() {
         <Card className="p-6 md:col-span-1">
           <div className="text-center">
             <Avatar className="w-24 h-24 mx-auto mb-4">
-              <AvatarFallback className="bg-primary/10 text-primary text-2xl">
+              <AvatarFallback className="bg-brand/10 text-brand text-2xl">
                 {currentUser?.full_name?.charAt(0) || 'A'}
               </AvatarFallback>
             </Avatar>
@@ -1593,7 +1593,7 @@ export default function Index() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2">
                   <Avatar className="w-8 h-8">
-                    <AvatarFallback className="bg-primary/10 text-primary">
+                    <AvatarFallback className="bg-brand/10 text-brand">
                       {currentUser?.full_name?.charAt(0) || 'A'}
                     </AvatarFallback>
                   </Avatar>

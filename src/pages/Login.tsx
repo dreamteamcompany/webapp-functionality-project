@@ -32,7 +32,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/10 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand/5 via-background to-brand/10 p-4">
       <Card className="w-full max-w-md p-8 shadow-xl">
         <div className="text-center mb-8">
           <img 
@@ -92,7 +92,7 @@ export default function Login() {
             </div>
           )}
 
-          <Button type="submit" className="w-full" size="lg" disabled={loading}>
+          <Button type="submit" className="w-full bg-brand hover:bg-brand/90" size="lg" disabled={loading}>
             {loading ? (
               <>
                 <Icon name="Loader2" size={20} className="mr-2 animate-spin" />
