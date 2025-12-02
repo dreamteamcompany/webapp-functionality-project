@@ -463,48 +463,76 @@ export default function Index() {
     </div>
   );
 
-  const renderCourses = () => (
-    <div>
-      <h2 className="text-3xl font-bold mb-6">Мои курсы</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {mockCourses.map((course) => {
-          const statusInfo = getStatusBadge(course.status);
+  const renderCourses = () => {
+    const courseTypes = [
+      { id: 'doctors', title: 'Курсы для врачей', icon: 'Stethoscope', color: 'purple' },
+      { id: 'sales', title: 'Курсы по продажам', icon: 'TrendingUp', color: 'green' },
+      { id: 'admins', title: 'Курсы для администраторов', icon: 'Users', color: 'blue' }
+    ];
+
+    return (
+      <div>
+        <h2 className="text-3xl font-bold mb-8">Мои курсы</h2>
+        
+        {courseTypes.map((type) => {
+          const typeCourses = mockCourses.filter(c => c.type === type.id);
+          if (typeCourses.length === 0) return null;
+          
           return (
-            <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setSelectedCourse(course)}>
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <Badge variant={statusInfo.variant}>{statusInfo.text}</Badge>
-                  <Badge variant="outline">{course.category}</Badge>
+            <div key={type.id} className="mb-10">
+              <div className="flex items-center gap-3 mb-6">
+                <div className={`w-10 h-10 bg-${type.color}-500/10 rounded-lg flex items-center justify-center`}>
+                  <Icon name={type.icon as any} size={20} className={`text-${type.color}-600`} />
                 </div>
-                
-                <h4 className="text-lg font-semibold mb-2">{course.title}</h4>
-                <p className="text-sm text-muted-foreground mb-4">{course.description}</p>
-                
-                <div className="space-y-2 mb-4">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Прогресс</span>
-                    <span className="font-medium">{course.progress}%</span>
-                  </div>
-                  <Progress value={course.progress} />
-                </div>
-                
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <Icon name="Clock" size={14} />
-                    <span>{course.duration}</span>
-                  </div>
-                  <Button size="sm">
-                    {course.status === 'completed' ? 'Повторить' : course.status === 'in-progress' ? 'Продолжить' : 'Начать'}
-                    <Icon name="ArrowRight" size={14} className="ml-2" />
-                  </Button>
+                <div>
+                  <h3 className="text-xl font-bold">{type.title}</h3>
+                  <p className="text-sm text-muted-foreground">{typeCourses.length} курсов</p>
                 </div>
               </div>
-            </Card>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {typeCourses.map((course) => {
+                  const statusInfo = getStatusBadge(course.status);
+                  return (
+                    <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setSelectedCourse(course)}>
+                      <div className="p-6">
+                        <div className="flex items-start justify-between mb-4">
+                          <Badge variant={statusInfo.variant}>{statusInfo.text}</Badge>
+                          <Badge variant="outline">{course.category}</Badge>
+                        </div>
+                        
+                        <h4 className="text-lg font-semibold mb-2">{course.title}</h4>
+                        <p className="text-sm text-muted-foreground mb-4">{course.description}</p>
+                        
+                        <div className="space-y-2 mb-4">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Прогресс</span>
+                            <span className="font-medium">{course.progress}%</span>
+                          </div>
+                          <Progress value={course.progress} />
+                        </div>
+                        
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-1 text-muted-foreground">
+                            <Icon name="Clock" size={14} />
+                            <span>{course.duration}</span>
+                          </div>
+                          <Button size="sm">
+                            {course.status === 'completed' ? 'Повторить' : course.status === 'in-progress' ? 'Продолжить' : 'Начать'}
+                            <Icon name="ArrowRight" size={14} className="ml-2" />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
           );
         })}
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderTrainers = () => (
     <div>

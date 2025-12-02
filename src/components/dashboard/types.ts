@@ -7,6 +7,7 @@ export interface Course {
   duration: string;
   status: 'not-started' | 'in-progress' | 'completed';
   lessons?: Lesson[];
+  type: 'doctors' | 'sales' | 'admins';
 }
 
 export interface Lesson {
