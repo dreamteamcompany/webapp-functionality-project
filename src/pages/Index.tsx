@@ -23,6 +23,7 @@ import { Course } from '@/components/dashboard/types';
 import { mockCourses, mockQuizQuestions, mockVoiceSteps, mockAchievements, mockLeaderboard } from '@/components/dashboard/mockData';
 import TrainerDialogs from '@/components/dashboard/TrainerDialogs';
 import CourseDialog from '@/components/dashboard/CourseDialog';
+import LearningStats from '@/components/dashboard/LearningStats';
 import VoiceRecorder from '@/lib/voiceRecorder';
 import SpeechAnalyzer, { SpeechAnalysisResult } from '@/lib/speechAnalyzer';
 import PatientAI, { ConversationAnalysis } from '@/lib/patientAI';
@@ -59,6 +60,7 @@ export default function Index() {
   const [doctorRecordingStartTime, setDoctorRecordingStartTime] = useState<number>(0);
   const patientAIRef = useRef<PatientAI | null>(null);
   const doctorVoiceRecorderRef = useRef<VoiceRecorder | null>(null);
+  const [learningStatsKey, setLearningStatsKey] = useState(0);
   
   // Profile state
   const [profileName, setProfileName] = useState(currentUser?.full_name || '');
@@ -229,6 +231,7 @@ export default function Index() {
     if (patientAIRef.current) {
       const analysis = patientAIRef.current.analyzeConversation();
       setConversationAnalysis(analysis);
+      setLearningStatsKey(prev => prev + 1);
     }
   };
 
@@ -236,6 +239,7 @@ export default function Index() {
     setDoctorMessages([]);
     setConversationAnalysis(null);
     patientAIRef.current = null;
+    setLearningStatsKey(prev => prev + 1);
   };
 
   const handleChangeScenario = (newScenario: 'consultation' | 'treatment' | 'emergency' | 'objections') => {
@@ -402,6 +406,21 @@ export default function Index() {
             </div>
           </Card>
         ))}
+      </div>
+
+      {/* Learning AI Statistics */}
+      <div>
+        <h3 className="text-2xl font-bold mb-6">Обучение ИИ пациента</h3>
+        <LearningStats 
+          key={learningStatsKey}
+          stats={patientAIRef.current?.getLearningStatistics() || {
+            totalObjections: 0,
+            totalSuccessful: 0,
+            totalUnsuccessful: 0,
+            mostLearnedObjection: '',
+            maxLearningCount: 0
+          }} 
+        />
       </div>
 
       {/* Recent Achievements */}

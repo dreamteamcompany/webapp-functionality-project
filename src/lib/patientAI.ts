@@ -24,6 +24,138 @@ export interface ConversationAnalysis {
   missedOpportunities: string[];
 }
 
+interface LearningPattern {
+  objection: string;
+  successfulResponses: string[];
+  unsuccessfulResponses: string[];
+  effectiveKeywords: string[];
+  lastUpdated: number;
+}
+
+class PatientLearningSystem {
+  private static readonly STORAGE_KEY = 'patient_ai_learning_data';
+  private patterns: Map<string, LearningPattern> = new Map();
+
+  constructor() {
+    this.loadPatterns();
+  }
+
+  private loadPatterns(): void {
+    try {
+      const stored = localStorage.getItem(PatientLearningSystem.STORAGE_KEY);
+      if (stored) {
+        const data = JSON.parse(stored);
+        this.patterns = new Map(Object.entries(data));
+      }
+    } catch (error) {
+      console.warn('Failed to load learning patterns:', error);
+    }
+  }
+
+  private savePatterns(): void {
+    try {
+      const data = Object.fromEntries(this.patterns);
+      localStorage.setItem(PatientLearningSystem.STORAGE_KEY, JSON.stringify(data));
+    } catch (error) {
+      console.warn('Failed to save learning patterns:', error);
+    }
+  }
+
+  recordResponse(objection: string, adminResponse: string, wasSuccessful: boolean): void {
+    const key = objection.toLowerCase().trim();
+    
+    if (!this.patterns.has(key)) {
+      this.patterns.set(key, {
+        objection,
+        successfulResponses: [],
+        unsuccessfulResponses: [],
+        effectiveKeywords: [],
+        lastUpdated: Date.now(),
+      });
+    }
+
+    const pattern = this.patterns.get(key)!;
+    
+    if (wasSuccessful) {
+      pattern.successfulResponses.push(adminResponse);
+      if (pattern.successfulResponses.length > 10) {
+        pattern.successfulResponses.shift();
+      }
+      
+      this.extractAndUpdateKeywords(pattern, adminResponse);
+    } else {
+      pattern.unsuccessfulResponses.push(adminResponse);
+      if (pattern.unsuccessfulResponses.length > 10) {
+        pattern.unsuccessfulResponses.shift();
+      }
+    }
+
+    pattern.lastUpdated = Date.now();
+    this.savePatterns();
+  }
+
+  private extractAndUpdateKeywords(pattern: LearningPattern, response: string): void {
+    const words = response.toLowerCase()
+      .replace(/[^\wа-яё\s]/gi, '')
+      .split(/\s+/)
+      .filter(w => w.length > 3);
+
+    const stopWords = new Set(['этот', 'тот', 'такой', 'есть', 'быть', 'мочь', 'очень', 'самый']);
+    
+    words.forEach(word => {
+      if (!stopWords.has(word) && !pattern.effectiveKeywords.includes(word)) {
+        pattern.effectiveKeywords.push(word);
+      }
+    });
+
+    if (pattern.effectiveKeywords.length > 20) {
+      pattern.effectiveKeywords = pattern.effectiveKeywords.slice(-20);
+    }
+  }
+
+  getLearnedKeywords(objection: string): string[] {
+    const key = objection.toLowerCase().trim();
+    const pattern = this.patterns.get(key);
+    return pattern?.effectiveKeywords || [];
+  }
+
+  getSimilarSuccessfulResponses(objection: string): string[] {
+    const key = objection.toLowerCase().trim();
+    const pattern = this.patterns.get(key);
+    return pattern?.successfulResponses || [];
+  }
+
+  getStatistics() {
+    const stats = {
+      totalObjections: this.patterns.size,
+      totalSuccessful: 0,
+      totalUnsuccessful: 0,
+      mostLearnedObjection: '',
+      maxLearningCount: 0,
+    };
+
+    this.patterns.forEach((pattern, key) => {
+      stats.totalSuccessful += pattern.successfulResponses.length;
+      stats.totalUnsuccessful += pattern.unsuccessfulResponses.length;
+      
+      const learningCount = pattern.successfulResponses.length;
+      if (learningCount > stats.maxLearningCount) {
+        stats.maxLearningCount = learningCount;
+        stats.mostLearnedObjection = key;
+      }
+    });
+
+    return stats;
+  }
+
+  resetLearning(): void {
+    this.patterns.clear();
+    localStorage.removeItem(PatientLearningSystem.STORAGE_KEY);
+  }
+}
+
+const learningSystem = new PatientLearningSystem();
+
 export class PatientAI {
   private profile: PatientProfile;
   private conversationHistory: Array<{ role: 'admin' | 'patient'; content: string }> = [];
@@ -32,6 +164,8 @@ export class PatientAI {
   private explainedClearly = false;
   private askedAboutConcerns = false;
   private messageCount = 0;
+  private lastObjection = '';
+  private learningSystem = learningSystem;
 
   constructor(scenario: 'consultation' | 'treatment' | 'emergency' | 'objections') {
     this.profile = this.createProfile(scenario);
@@ -94,15 +228,23 @@ export class PatientAI {
     let response = '';
     let currentMood = this.profile.mood;
     let satisfaction = 50;
+    let wasSuccessful = false;
 
     if (this.messageCount === 1) {
       response = this.getInitialResponse();
     } else if (this.profile.scenario === 'objections' && this.handlesObjection(lowerMessage)) {
-      response = this.getObjectionHandlingResponse(lowerMessage);
-      satisfaction = 85;
-      currentMood = 'calm';
+      const effectiveness = this.calculateObjectionHandlingEffectiveness(lowerMessage);
+      response = this.getObjectionHandlingResponse(lowerMessage, effectiveness);
+      satisfaction = effectiveness;
+      currentMood = effectiveness >= 70 ? 'calm' : 'nervous';
+      wasSuccessful = effectiveness >= 70;
+      
+      if (this.lastObjection) {
+        this.learningSystem.recordResponse(this.lastObjection, adminMessage, wasSuccessful);
+      }
     } else if (this.profile.scenario === 'objections' && this.messageCount >= 2 && this.messageCount % 2 === 0) {
       response = this.getNextObjection();
+      this.lastObjection = response;
       satisfaction = 50;
     } else if (this.containsEmpathy(lowerMessage)) {
       response = this.getEmpathyResponse();
@@ -138,6 +280,78 @@ export class PatientAI {
     };
   }
 
+  private calculateObjectionHandlingEffectiveness(message: string): number {
+    let score = 50;
+
+    const learnedKeywords = this.lastObjection 
+      ? this.learningSystem.getLearnedKeywords(this.lastObjection)
+      : [];
+
+    const objectionHandlingKeywords = [
+      'понимаю', 'выгода', 'сэкономите', 'инвестиция', 'долгосрочно',
+      'качество', 'гарантия', 'здоровье', 'важно', 'преимущества',
+      'сравните', 'разница', 'результат', 'альтернатива', 'экономия',
+      'ценность', 'польза', 'эффективность', 'надежность', 'безопасность',
+      ...learnedKeywords
+    ];
+
+    const foundKeywords = objectionHandlingKeywords.filter(kw => message.includes(kw));
+    score += foundKeywords.length * 10;
+
+    if (message.includes('?')) {
+      score += 5;
+    }
+
+    const wordCount = message.split(' ').length;
+    if (wordCount >= 10 && wordCount <= 50) {
+      score += 15;
+    } else if (wordCount > 50) {
+      score -= 5;
+    }
+
+    if (message.includes('качество') || message.includes('здоровье')) {
+      score += 15;
+    }
+
+    if (message.includes('выгода') || message.includes('сэкономите') || message.includes('экономия')) {
+      score += 15;
+    }
+
+    const similarSuccessful = this.lastObjection
+      ? this.learningSystem.getSimilarSuccessfulResponses(this.lastObjection)
+      : [];
+
+    if (similarSuccessful.length > 0) {
+      const similarity = this.calculateSimilarity(message, similarSuccessful);
+      score += similarity * 10;
+    }
+
+    return Math.min(Math.max(score, 30), 100);
+  }
+
+  private calculateSimilarity(message: string, successfulResponses: string[]): number {
+    const messageWords = new Set(
+      message.toLowerCase().split(/\s+/).filter(w => w.length > 3)
+    );
+
+    let maxSimilarity = 0;
+
+    successfulResponses.forEach(successful => {
+      const successWords = new Set(
+        successful.toLowerCase().split(/\s+/).filter(w => w.length > 3)
+      );
+
+      const intersection = new Set(
+        [...messageWords].filter(w => successWords.has(w))
+      );
+
+      const similarity = intersection.size / Math.max(messageWords.size, successWords.size);
+      maxSimilarity = Math.max(maxSimilarity, similarity);
+    });
+
+    return maxSimilarity;
+  }
+
   private analyzeAdminMessage(message: string): void {
     const empathyKeywords = ['понимаю', 'переживаете', 'волнуетесь', 'беспокоитесь', 'помогу', 'поддержу'];
     const clarityKeywords = ['объясню', 'расскажу', 'простыми словами', 'это значит', 'поясню'];
@@ -166,6 +380,8 @@ export class PatientAI {
       'Спасибо, что понимаете мое состояние. Мне правда страшно...',
       'Да, я действительно очень переживаю. Приятно, что вы это замечаете.',
       'Спасибо за поддержку, мне стало немного спокойнее.',
+      'Очень важно, что вы меня понимаете. Это помогает.',
+      'Да, вы правы, я волнуюсь. Хорошо, что мы можем об этом поговорить.',
     ];
     return responses[Math.floor(Math.random() * responses.length)];
   }
@@ -176,7 +392,12 @@ export class PatientAI {
 
   private getTreatmentResponse(message: string): string {
     if (this.explainedClearly) {
-      return 'Спасибо, что объяснили так понятно. Я начинаю понимать ситуацию. А сколько времени займет лечение?';
+      const responses = [
+        'Спасибо, что объяснили так понятно. Я начинаю понимать ситуацию. А сколько времени займет лечение?',
+        'Теперь мне стало яснее, спасибо. А какие гарантии успеха?',
+        'Хорошо, что вы так доступно объяснили. Это успокаивает.',
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
     }
     return 'Хм... А можете объяснить попроще? Я не очень разбираюсь в медицинских терминах.';
   }
@@ -195,6 +416,9 @@ export class PatientAI {
       'Хорошо... А что мне нужно делать?',
       'Понятно. А есть еще что-то важное?',
       'Ага... И как это поможет с моей проблемой?',
+      'Я слушаю внимательно. Продолжайте, пожалуйста.',
+      'Интересно... А можете рассказать подробнее?',
+      'Хм, понятно. А что это значит для меня конкретно?',
     ];
     return responses[Math.floor(Math.random() * responses.length)];
   }
@@ -225,12 +449,18 @@ export class PatientAI {
   }
 
   private handlesObjection(message: string): boolean {
+    const learnedKeywords = this.lastObjection 
+      ? this.learningSystem.getLearnedKeywords(this.lastObjection)
+      : [];
+
     const objectionHandlingKeywords = [
       'понимаю', 'выгода', 'сэкономите', 'инвестиция', 'долгосрочно',
       'качество', 'гарантия', 'здоровье', 'важно', 'преимущества',
-      'сравните', 'разница', 'результат', 'альтернатива'
+      'сравните', 'разница', 'результат', 'альтернатива',
+      ...learnedKeywords
     ];
-    return objectionHandlingKeywords.some(kw => message.includes(kw));
+    
+    return objectionHandlingKeywords.some(kw => message.includes(kw)) && message.split(' ').length >= 5;
   }
 
   private getNextObjection(): string {
@@ -246,23 +476,44 @@ export class PatientAI {
     return this.profile.objections[objectionIndex];
   }
 
-  private getObjectionHandlingResponse(message: string): string {
-    const responses = [
-      'Да, я понимаю ваши опасения. Спасибо, что объяснили так подробно.',
-      'Хм... Интересная точка зрения. Я подумаю над этим.',
-      'Спасибо за разъяснение! Теперь мне стало понятнее.',
-      'Да, вы правы. Я не думал об этом с такой стороны.',
+  private getObjectionHandlingResponse(message: string, effectiveness: number): string {
+    if (effectiveness >= 85) {
+      const strongResponses = [
+        'Да, здоровье это главное. Вы меня убедили! Давайте договоримся о записи.',
+        'Спасибо за подробное объяснение! Теперь все понятно. Когда можно начать?',
+        'Вы правы, я не думал об этом с такой стороны. Это действительно инвестиция в здоровье!',
+        'Отлично, что вы так объяснили. Я готов двигаться дальше.',
+      ];
+      return strongResponses[Math.floor(Math.random() * strongResponses.length)];
+    }
+    
+    if (effectiveness >= 70) {
+      const goodResponses = [
+        'Да, я понимаю ваши аргументы. Звучит разумно.',
+        'Хм... Интересная точка зрения. Я подумаю над этим серьезно.',
+        'Спасибо за разъяснение! Теперь мне стало понятнее.',
+        'Действительно, если посмотреть в долгосрочной перспективе, это выгоднее.',
+      ];
+      return goodResponses[Math.floor(Math.random() * goodResponses.length)];
+    }
+
+    if (effectiveness >= 50) {
+      const neutralResponses = [
+        'Ну... не знаю. Мне нужно еще подумать.',
+        'Возможно, вы правы, но это все равно дорого...',
+        'Да, я слышу вас, но у меня все еще есть сомнения.',
+        'Понятно... но можно ли как-то по-другому?',
+      ];
+      return neutralResponses[Math.floor(Math.random() * neutralResponses.length)];
+    }
+
+    const weakResponses = [
+      'Извините, но я все равно не понимаю, зачем платить столько.',
+      'Нет, это слишком. Я лучше поищу другие варианты.',
+      'Вы не объяснили конкретно, в чем выгода для меня.',
+      'Мне кажется, вы просто хотите продать подороже...',
     ];
-    
-    if (message.includes('качество') || message.includes('здоровье')) {
-      return 'Да, здоровье это главное. Вы меня убедили!';
-    }
-    
-    if (message.includes('выгода') || message.includes('сэкономите')) {
-      return 'Действительно, если посмотреть в долгосрочной перспективе, это выгоднее.';
-    }
-    
-    return responses[Math.floor(Math.random() * responses.length)];
+    return weakResponses[Math.floor(Math.random() * weakResponses.length)];
   }
 
   analyzeConversation(): ConversationAnalysis {
@@ -282,10 +533,10 @@ export class PatientAI {
       goodPoints.push('Проявили эмпатию и поддержку');
     }
 
-    if (!this.askedAboutSymptoms) {
+    if (!this.askedAboutSymptoms && this.profile.scenario !== 'objections') {
       recommendations.push('Обязательно уточняйте все симптомы пациента для полной картины');
       missedOpportunities.push('Не уточнили все симптомы');
-    } else {
+    } else if (this.askedAboutSymptoms) {
       goodPoints.push('Задали вопросы о симптомах');
     }
 
@@ -309,6 +560,13 @@ export class PatientAI {
 
     if (professionalismScore > 70) {
       goodPoints.push('Сохранили профессиональный тон');
+    }
+
+    if (this.profile.scenario === 'objections') {
+      const stats = this.learningSystem.getStatistics();
+      if (stats.totalSuccessful > 0) {
+        goodPoints.push(`ИИ обучился на ${stats.totalSuccessful} успешных ответах`);
+      }
     }
 
     return {
@@ -351,6 +609,14 @@ export class PatientAI {
 
   getConversationHistory() {
     return this.conversationHistory;
+  }
+
+  getLearningStatistics() {
+    return this.learningSystem.getStatistics();
+  }
+
+  static resetLearning() {
+    learningSystem.resetLearning();
   }
 }
 
