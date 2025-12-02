@@ -1473,9 +1473,9 @@ export default function Index() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img 
-                src="https://cdn.poehali.dev/projects/5d628799-a66f-463d-92fd-2665c44b5a99/files/94ca50ae-e96b-4cdd-9762-1a33ba26f331.jpg" 
+                src="/logo.svg" 
                 alt="Команда мечты" 
-                className="w-10 h-10 rounded-lg object-cover"
+                className="h-10"
               />
               <div>
                 <h1 className="text-lg font-bold">Команда мечты</h1>

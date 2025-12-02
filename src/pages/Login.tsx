@@ -36,9 +36,9 @@ export default function Login() {
       <Card className="w-full max-w-md p-8 shadow-xl">
         <div className="text-center mb-8">
           <img 
-            src="https://cdn.poehali.dev/projects/5d628799-a66f-463d-92fd-2665c44b5a99/files/94ca50ae-e96b-4cdd-9762-1a33ba26f331.jpg" 
+            src="/logo.svg" 
             alt="Команда мечты" 
-            className="w-24 h-24 mx-auto mb-4 rounded-lg object-cover"
+            className="h-16 mx-auto mb-4"
           />
           <h1 className="text-3xl font-bold mb-2">Вход в систему</h1>
           <p className="text-muted-foreground">
