@@ -194,7 +194,7 @@ export default function TrainerDialogs({
               <p>{mockVoiceSteps[currentVoiceStep].prompt}</p>
             </div>
 
-            {isRecording && <VoiceVisualizer isRecording={isRecording} stream={voiceStream || undefined} />}
+            {voiceStream && <VoiceVisualizer isRecording={isRecording} stream={voiceStream} />}
 
             <div className="text-center space-y-4">
               <Button
@@ -347,7 +347,7 @@ export default function TrainerDialogs({
                   </div>
 
                   <div className="space-y-2">
-                    {isDoctorRecording && <VoiceVisualizer isRecording={isDoctorRecording} stream={doctorVoiceStream || undefined} />}
+                    {doctorVoiceStream && <VoiceVisualizer isRecording={isDoctorRecording} stream={doctorVoiceStream} />}
                     
                     <div className="flex gap-2">
                       <Button

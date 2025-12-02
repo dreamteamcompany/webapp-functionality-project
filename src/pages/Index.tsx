@@ -279,6 +279,9 @@ export default function Index() {
     }
 
     try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setDoctorVoiceStream(stream);
+      
       await doctorVoiceRecorderRef.current.startRecording();
       setIsDoctorRecording(true);
       setDoctorRecordingStartTime(Date.now());
@@ -305,6 +308,11 @@ export default function Index() {
     if (doctorVoiceRecorderRef.current && isDoctorRecording) {
       doctorVoiceRecorderRef.current.stopRecording();
       setIsDoctorRecording(false);
+      
+      if (doctorVoiceStream) {
+        doctorVoiceStream.getTracks().forEach(track => track.stop());
+        setDoctorVoiceStream(null);
+      }
 
       setTimeout(() => {
         if (!doctorInput || doctorInput.trim().length === 0) {
@@ -884,6 +892,7 @@ export default function Index() {
         voiceResponse={voiceResponse}
         isRecording={isRecording}
         voiceAnalysis={voiceAnalysis}
+        voiceStream={voiceStream}
         doctorScenario={doctorScenario}
         setDoctorScenario={setDoctorScenario}
         doctorMessages={doctorMessages}
@@ -891,6 +900,7 @@ export default function Index() {
         setDoctorInput={setDoctorInput}
         conversationAnalysis={conversationAnalysis}
         isDoctorRecording={isDoctorRecording}
+        doctorVoiceStream={doctorVoiceStream}
         handleQuizAnswer={handleQuizAnswer}
         handleNextQuizQuestion={handleNextQuizQuestion}
         handlePrevQuizQuestion={handlePrevQuizQuestion}
