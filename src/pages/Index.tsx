@@ -717,23 +717,200 @@ export default function Index() {
         </div>
       </div>
 
+      {/* Trainer Statistics */}
+      <div className="mb-8">
+        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <Icon name="Dumbbell" size={20} />
+          Статистика по тренажерам
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Quiz Stats */}
+          <Card className="p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                <Icon name="ClipboardCheck" size={24} className="text-blue-600" />
+              </div>
+              <div>
+                <h4 className="font-semibold">Тестовый тренажер</h4>
+                <p className="text-xs text-muted-foreground">Проверка знаний</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Пройдено тестов</span>
+                <span className="text-lg font-bold">8</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Средний балл</span>
+                <span className="text-lg font-bold text-blue-600">87%</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Лучший результат</span>
+                <span className="text-lg font-bold text-green-600">95%</span>
+              </div>
+              <Progress value={87} className="h-2" />
+              <p className="text-xs text-muted-foreground text-center">
+                Вы в топ 15% по результатам тестов
+              </p>
+            </div>
+          </Card>
+
+          {/* Voice Stats */}
+          <Card className="p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center">
+                <Icon name="Mic" size={24} className="text-green-600" />
+              </div>
+              <div>
+                <h4 className="font-semibold">Голосовой тренажер</h4>
+                <p className="text-xs text-muted-foreground">Практика общения</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Сценариев пройдено</span>
+                <span className="text-lg font-bold">5</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Успешность</span>
+                <span className="text-lg font-bold text-green-600">82%</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Время практики</span>
+                <span className="text-lg font-bold">3.5 ч</span>
+              </div>
+              <Progress value={82} className="h-2" />
+              <p className="text-xs text-muted-foreground text-center">
+                Улучшение на +12% за последний месяц
+              </p>
+            </div>
+          </Card>
+
+          {/* Doctor AI Stats */}
+          <Card className="p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-purple-500/10 rounded-lg flex items-center justify-center">
+                <Icon name="Stethoscope" size={24} className="text-purple-600" />
+              </div>
+              <div>
+                <h4 className="font-semibold">Тренажер с врачом</h4>
+                <p className="text-xs text-muted-foreground">AI симуляции</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Диалогов завершено</span>
+                <span className="text-lg font-bold">12</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Возражений обработано</span>
+                <span className="text-lg font-bold text-purple-600">28</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Успешно закрыто</span>
+                <span className="text-lg font-bold text-green-600">23</span>
+              </div>
+              <Progress value={82} className="h-2" />
+              <p className="text-xs text-muted-foreground text-center">
+                AI оценивает вашу речь на 4.2/5
+              </p>
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      {/* Personal Metrics */}
+      <div className="mb-8">
+        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <Icon name="TrendingUp" size={20} />
+          Персональные метрики
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="p-6 bg-gradient-to-br from-blue-50/50 to-blue-100/50 dark:from-blue-950/20 dark:to-blue-900/20 border-blue-200 dark:border-blue-800">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                <Icon name="Zap" size={20} className="text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Серия дней</p>
+                <p className="text-2xl font-bold">12</p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Вы учитесь 12 дней подряд! 🔥
+            </p>
+          </Card>
+
+          <Card className="p-6 bg-gradient-to-br from-green-50/50 to-green-100/50 dark:from-green-950/20 dark:to-green-900/20 border-green-200 dark:border-green-800">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                <Icon name="Target" size={20} className="text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Выполнение цели</p>
+                <p className="text-2xl font-bold">85%</p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Осталось 3 урока до недельной цели
+            </p>
+          </Card>
+
+          <Card className="p-6 bg-gradient-to-br from-purple-50/50 to-purple-100/50 dark:from-purple-950/20 dark:to-purple-900/20 border-purple-200 dark:border-purple-800">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                <Icon name="Brain" size={20} className="text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Рейтинг навыков</p>
+                <p className="text-2xl font-bold">4.3</p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              AI оценка ваших компетенций
+            </p>
+          </Card>
+
+          <Card className="p-6 bg-gradient-to-br from-orange-50/50 to-orange-100/50 dark:from-orange-950/20 dark:to-orange-900/20 border-orange-200 dark:border-orange-800">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                <Icon name="Users" size={20} className="text-orange-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Место в рейтинге</p>
+                <p className="text-2xl font-bold">#4</p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Вы обогнали 3 коллег за неделю
+            </p>
+          </Card>
+        </div>
+      </div>
+
       {/* Performance by Category */}
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4">Результаты по категориям</h3>
         <div className="space-y-4">
           {[
-            { name: 'Продажи', score: 92, color: 'bg-blue-500' },
-            { name: 'Сервис', score: 88, color: 'bg-green-500' },
-            { name: 'Коммуникация', score: 85, color: 'bg-purple-500' },
-            { name: 'Техническая часть', score: 78, color: 'bg-orange-500' },
+            { name: 'Продажи', score: 92, color: 'bg-blue-500', trend: '+5%', trendUp: true },
+            { name: 'Сервис', score: 88, color: 'bg-green-500', trend: '+2%', trendUp: true },
+            { name: 'Коммуникация', score: 85, color: 'bg-purple-500', trend: '+8%', trendUp: true },
+            { name: 'Техническая часть', score: 78, color: 'bg-orange-500', trend: '-3%', trendUp: false },
           ].map((category, index) => (
             <div key={index}>
               <div className="flex justify-between text-sm mb-2">
-                <span>{category.name}</span>
+                <div className="flex items-center gap-2">
+                  <span>{category.name}</span>
+                  <Badge variant="outline" className={`text-xs ${category.trendUp ? 'text-green-600' : 'text-orange-600'}`}>
+                    <Icon name={category.trendUp ? 'TrendingUp' : 'TrendingDown'} size={10} className="mr-1" />
+                    {category.trend}
+                  </Badge>
+                </div>
                 <span className="font-medium">{category.score}%</span>
               </div>
               <div className="w-full bg-secondary rounded-full h-2">
-                <div className={`${category.color} h-2 rounded-full`} style={{ width: `${category.score}%` }} />
+                <div className={`${category.color} h-2 rounded-full transition-all`} style={{ width: `${category.score}%` }} />
               </div>
             </div>
           ))}
