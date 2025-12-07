@@ -67,6 +67,16 @@ export default function Index() {
   const [learningStatsKey, setLearningStatsKey] = useState(0);
   const [simulatorDialog, setSimulatorDialog] = useState(false);
   
+  // Knowledge base states
+  const [selectedKnowledgeCategory, setSelectedKnowledgeCategory] = useState<string | null>(null);
+  const [selectedArticle, setSelectedArticle] = useState<any>(null);
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+  const [isCreatingArticle, setIsCreatingArticle] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryDescription, setNewCategoryDescription] = useState('');
+  const [newArticleTitle, setNewArticleTitle] = useState('');
+  const [newArticleContent, setNewArticleContent] = useState('');
+  
   // Profile state
   const [profileName, setProfileName] = useState(currentUser?.full_name || '');
   const [profileEmail, setProfileEmail] = useState(currentUser?.email || '');
@@ -331,6 +341,28 @@ export default function Index() {
 
   const handleSaveProfile = () => {
     console.log('Saving profile:', { profileName, profileEmail, profileBio });
+  };
+
+  const handleCreateCategory = () => {
+    console.log('Creating category:', { newCategoryName, newCategoryDescription });
+    setIsCreatingCategory(false);
+    setNewCategoryName('');
+    setNewCategoryDescription('');
+    toast({
+      title: 'Раздел создан',
+      description: 'Новый раздел базы знаний успешно добавлен',
+    });
+  };
+
+  const handleCreateArticle = () => {
+    console.log('Creating article:', { newArticleTitle, newArticleContent, category: selectedKnowledgeCategory });
+    setIsCreatingArticle(false);
+    setNewArticleTitle('');
+    setNewArticleContent('');
+    toast({
+      title: 'Статья создана',
+      description: 'Новая статья успешно добавлена в базу знаний',
+    });
   };
 
   // Render functions
@@ -1518,6 +1550,336 @@ export default function Index() {
     </div>
   );
 
+  const renderKnowledgeBase = () => {
+    const knowledgeCategories = [
+      { 
+        id: 'doctors', 
+        title: 'База знаний для врачей', 
+        icon: 'Stethoscope', 
+        color: 'purple', 
+        description: 'Клинические протоколы и процедуры',
+        articlesCount: 24
+      },
+      { 
+        id: 'admins', 
+        title: 'База знаний для администраторов', 
+        icon: 'Users', 
+        color: 'blue', 
+        description: 'Работа с пациентами и документация',
+        articlesCount: 18
+      },
+      { 
+        id: 'generics', 
+        title: 'База знаний дженериков', 
+        icon: 'Pill', 
+        color: 'green', 
+        description: 'Препараты и их аналоги',
+        articlesCount: 156
+      }
+    ];
+
+    const mockArticles = {
+      doctors: [
+        { id: 1, title: 'Протокол первичного осмотра', category: 'Процедуры', views: 234, lastUpdated: '2024-12-05' },
+        { id: 2, title: 'Работа с медицинской картой', category: 'Документация', views: 189, lastUpdated: '2024-12-04' },
+        { id: 3, title: 'Стандарты коммуникации с пациентами', category: 'Коммуникация', views: 312, lastUpdated: '2024-12-03' },
+        { id: 4, title: 'Техники диагностики', category: 'Процедуры', views: 267, lastUpdated: '2024-12-02' },
+      ],
+      admins: [
+        { id: 5, title: 'Регистрация нового пациента', category: 'Прием', views: 445, lastUpdated: '2024-12-05' },
+        { id: 6, title: 'Работа с электронной очередью', category: 'Технологии', views: 298, lastUpdated: '2024-12-04' },
+        { id: 7, title: 'Обработка жалоб и возражений', category: 'Конфликты', views: 367, lastUpdated: '2024-12-03' },
+        { id: 8, title: 'Оформление документов', category: 'Документация', views: 421, lastUpdated: '2024-12-01' },
+      ],
+      generics: [
+        { id: 9, title: 'Аналоги препаратов группы НПВС', category: 'НПВС', views: 523, lastUpdated: '2024-12-05' },
+        { id: 10, title: 'Антибиотики широкого спектра', category: 'Антибиотики', views: 612, lastUpdated: '2024-12-04' },
+        { id: 11, title: 'Препараты для лечения гипертонии', category: 'Кардиология', views: 489, lastUpdated: '2024-12-03' },
+        { id: 12, title: 'Витаминные комплексы', category: 'Витамины', views: 334, lastUpdated: '2024-12-02' },
+      ]
+    };
+
+    // Просмотр конкретной статьи
+    if (selectedArticle) {
+      return (
+        <div>
+          <Button 
+            variant="ghost" 
+            className="mb-6"
+            onClick={() => setSelectedArticle(null)}
+          >
+            <Icon name="ArrowLeft" size={16} className="mr-2" />
+            Назад к списку статей
+          </Button>
+          
+          <Card className="p-8">
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex-1">
+                <h1 className="text-3xl font-bold mb-2">{selectedArticle.title}</h1>
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Icon name="Eye" size={14} />
+                    {selectedArticle.views} просмотров
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Icon name="Calendar" size={14} />
+                    Обновлено: {selectedArticle.lastUpdated}
+                  </span>
+                  <Badge variant="outline">{selectedArticle.category}</Badge>
+                </div>
+              </div>
+              <Button variant="outline" size="sm">
+                <Icon name="Edit" size={16} className="mr-2" />
+                Редактировать
+              </Button>
+            </div>
+            
+            <div className="prose max-w-none">
+              <p className="text-muted-foreground mb-4">
+                Это демонстрационная статья базы знаний. Здесь будет отображаться полное содержание статьи с текстом, изображениями, таблицами и другим контентом.
+              </p>
+              <h2 className="text-xl font-semibold mt-6 mb-3">Основные положения</h2>
+              <p className="text-muted-foreground mb-4">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+              </p>
+              <h2 className="text-xl font-semibold mt-6 mb-3">Пошаговая инструкция</h2>
+              <ol className="list-decimal list-inside space-y-2 text-muted-foreground mb-4">
+                <li>Первый шаг процедуры</li>
+                <li>Второй шаг с важными деталями</li>
+                <li>Третий шаг и завершение</li>
+              </ol>
+            </div>
+          </Card>
+        </div>
+      );
+    }
+
+    // Список статей внутри категории
+    if (selectedKnowledgeCategory) {
+      const category = knowledgeCategories.find(c => c.id === selectedKnowledgeCategory);
+      const articles = mockArticles[selectedKnowledgeCategory as keyof typeof mockArticles] || [];
+      
+      return (
+        <div>
+          <Button 
+            variant="ghost" 
+            className="mb-6"
+            onClick={() => setSelectedKnowledgeCategory(null)}
+          >
+            <Icon name="ArrowLeft" size={16} className="mr-2" />
+            Назад к разделам
+          </Button>
+          
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 bg-${category?.color}-500/10 rounded-lg flex items-center justify-center`}>
+                  <Icon name={category?.icon as any} size={24} className={`text-${category?.color}-600`} />
+                </div>
+                <div>
+                  <h2 className="text-3xl font-bold">{category?.title}</h2>
+                  <p className="text-muted-foreground">{category?.description}</p>
+                </div>
+              </div>
+              <Button onClick={() => setIsCreatingArticle(true)} className="bg-brand hover:bg-brand/90">
+                <Icon name="Plus" size={16} className="mr-2" />
+                Создать статью
+              </Button>
+            </div>
+          </div>
+
+          {/* Форма создания статьи */}
+          {isCreatingArticle && (
+            <Card className="p-6 mb-6 border-brand/30 bg-brand/5">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <Icon name="FileText" size={20} />
+                Создание новой статьи
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="article-title">Название статьи</Label>
+                  <Input
+                    id="article-title"
+                    value={newArticleTitle}
+                    onChange={(e) => setNewArticleTitle(e.target.value)}
+                    placeholder="Введите название статьи"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="article-content">Содержание</Label>
+                  <Textarea
+                    id="article-content"
+                    value={newArticleContent}
+                    onChange={(e) => setNewArticleContent(e.target.value)}
+                    placeholder="Введите содержание статьи"
+                    rows={8}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={handleCreateArticle} className="bg-brand hover:bg-brand/90">
+                    <Icon name="Check" size={16} className="mr-2" />
+                    Создать
+                  </Button>
+                  <Button variant="outline" onClick={() => setIsCreatingArticle(false)}>
+                    <Icon name="X" size={16} className="mr-2" />
+                    Отмена
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Список статей */}
+          <div className="grid grid-cols-1 gap-4">
+            {articles.map((article) => (
+              <Card 
+                key={article.id} 
+                className="p-6 hover:shadow-lg transition-shadow cursor-pointer"
+                onClick={() => setSelectedArticle(article)}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-lg font-semibold">{article.title}</h3>
+                      <Badge variant="outline">{article.category}</Badge>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Icon name="Eye" size={14} />
+                        {article.views} просмотров
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Icon name="Calendar" size={14} />
+                        {article.lastUpdated}
+                      </span>
+                    </div>
+                  </div>
+                  <Icon name="ChevronRight" size={20} className="text-muted-foreground" />
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // Список категорий базы знаний
+    return (
+      <div>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold mb-2">База знаний</h2>
+            <p className="text-muted-foreground">Структурированная информация для всех сотрудников</p>
+          </div>
+          <Button onClick={() => setIsCreatingCategory(true)} variant="outline">
+            <Icon name="Plus" size={16} className="mr-2" />
+            Создать раздел
+          </Button>
+        </div>
+
+        {/* Форма создания категории */}
+        {isCreatingCategory && (
+          <Card className="p-6 mb-6 border-brand/30 bg-brand/5">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Icon name="FolderPlus" size={20} />
+              Создание нового раздела
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="category-name">Название раздела</Label>
+                <Input
+                  id="category-name"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder="Например: База знаний для медсестер"
+                />
+              </div>
+              <div>
+                <Label htmlFor="category-description">Описание</Label>
+                <Textarea
+                  id="category-description"
+                  value={newCategoryDescription}
+                  onChange={(e) => setNewCategoryDescription(e.target.value)}
+                  placeholder="Краткое описание раздела"
+                  rows={3}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={handleCreateCategory} className="bg-brand hover:bg-brand/90">
+                  <Icon name="Check" size={16} className="mr-2" />
+                  Создать
+                </Button>
+                <Button variant="outline" onClick={() => setIsCreatingCategory(false)}>
+                  <Icon name="X" size={16} className="mr-2" />
+                  Отмена
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {knowledgeCategories.map((category) => (
+            <Card 
+              key={category.id} 
+              className="p-8 hover:shadow-lg transition-all cursor-pointer group"
+              onClick={() => setSelectedKnowledgeCategory(category.id)}
+            >
+              <div className="flex flex-col items-center text-center">
+                <div className={`w-20 h-20 bg-${category.color}-500/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform mb-4`}>
+                  <Icon name={category.icon as any} size={40} className={`text-${category.color}-600`} />
+                </div>
+                
+                <h3 className="text-xl font-bold mb-2">{category.title}</h3>
+                <p className="text-sm text-muted-foreground mb-4">{category.description}</p>
+                
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Icon name="FileText" size={16} />
+                  <span>{category.articlesCount} статей</span>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        {/* Популярные статьи */}
+        <div className="mt-12">
+          <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <Icon name="TrendingUp" size={24} />
+            Популярные статьи
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Icon name="Stethoscope" size={20} className="text-purple-600" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold mb-1">Протокол первичного осмотра</h4>
+                  <p className="text-sm text-muted-foreground mb-2">Для врачей • 234 просмотра</p>
+                  <Badge variant="outline" className="text-xs">Процедуры</Badge>
+                </div>
+              </div>
+            </Card>
+            
+            <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Icon name="Pill" size={20} className="text-green-600" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold mb-1">Антибиотики широкого спектра</h4>
+                  <p className="text-sm text-muted-foreground mb-2">Дженерики • 612 просмотров</p>
+                  <Badge variant="outline" className="text-xs">Антибиотики</Badge>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderProfile = () => (
     <div>
       <h2 className="text-3xl font-bold mb-6">Профиль</h2>
@@ -1660,7 +2022,7 @@ export default function Index() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="grid w-full grid-cols-7 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-8 lg:w-auto lg:inline-grid">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <Icon name="LayoutDashboard" size={16} />
               <span className="hidden sm:inline">Главная</span>
@@ -1676,6 +2038,10 @@ export default function Index() {
             <TabsTrigger value="games" className="flex items-center gap-2">
               <Icon name="Gamepad2" size={16} />
               <span className="hidden sm:inline">Игры</span>
+            </TabsTrigger>
+            <TabsTrigger value="knowledge" className="flex items-center gap-2">
+              <Icon name="BookMarked" size={16} />
+              <span className="hidden sm:inline">База знаний</span>
             </TabsTrigger>
             <TabsTrigger value="analytics" className="flex items-center gap-2">
               <Icon name="BarChart3" size={16} />
@@ -1695,6 +2061,7 @@ export default function Index() {
           <TabsContent value="courses">{renderCourses()}</TabsContent>
           <TabsContent value="trainers">{renderTrainers()}</TabsContent>
           <TabsContent value="games">{renderGames()}</TabsContent>
+          <TabsContent value="knowledge">{renderKnowledgeBase()}</TabsContent>
           <TabsContent value="analytics">{renderAnalytics()}</TabsContent>
           <TabsContent value="achievements">{renderAchievements()}</TabsContent>
           <TabsContent value="leaderboard">{renderLeaderboard()}</TabsContent>
