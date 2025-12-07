@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +21,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { generateAIResponse, type Message, type Phase } from '@/lib/ai-patient';
 
 interface Company {
   id: string;
@@ -88,7 +92,27 @@ export default function SalesBattle() {
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [currentMatch, setCurrentMatch] = useState<Match | null>(null);
   const [battleTimer, setBattleTimer] = useState(300);
-  const [battlePhase, setBattlePhase] = useState<'greeting' | 'needs' | 'presentation' | 'objections' | 'closing'>('greeting');
+  const [battlePhase, setBattlePhase] = useState<Phase>('greeting');
+  const [chatHistory, setChatHistory] = useState<Message[]>([]);
+  const [playerInput, setPlayerInput] = useState('');
+  const [isAIThinking, setIsAIThinking] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Автоскролл чата
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatHistory]);
+
+  // Таймер боя
+  useEffect(() => {
+    if (!battleDialog || battleTimer <= 0) return;
+
+    const timer = setInterval(() => {
+      setBattleTimer(prev => Math.max(0, prev - 1));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [battleDialog, battleTimer]);
 
   const handleCreateTournament = () => {
     if (!selectedCompanyA || !selectedCompanyB) {
@@ -173,17 +197,71 @@ export default function SalesBattle() {
     setBattleDialog(true);
     setBattleTimer(300);
     setBattlePhase('greeting');
+    setChatHistory([]);
+    setPlayerInput('');
+    
+    // Первое сообщение от ИИ
+    setTimeout(() => {
+      const aiResponse = generateAIResponse('greeting', '', []);
+      setChatHistory([{ role: 'client', content: aiResponse.response }]);
+    }, 500);
+  };
+
+  const handleSendMessage = () => {
+    if (!playerInput.trim() || !currentMatch) return;
+
+    const newMessage: Message = { role: 'manager', content: playerInput };
+    const updatedHistory = [...chatHistory, newMessage];
+    setChatHistory(updatedHistory);
+    setPlayerInput('');
+    setIsAIThinking(true);
+
+    // ИИ отвечает после задержки
+    setTimeout(() => {
+      const aiResponse = generateAIResponse(battlePhase, playerInput, updatedHistory);
+      
+      // Добавляем очки игрокам
+      const player1Score = (currentMatch.score1 || 0) + aiResponse.score;
+      const player2Score = (currentMatch.score2 || 0) + Math.floor(Math.random() * 5) + 3;
+      
+      setCurrentMatch({
+        ...currentMatch,
+        score1: player1Score,
+        score2: player2Score,
+      });
+
+      setChatHistory([...updatedHistory, { role: 'client', content: aiResponse.response }]);
+      setIsAIThinking(false);
+      
+      // Автоматически переходим к следующей фазе после 3 сообщений
+      const managerMessages = updatedHistory.filter(m => m.role === 'manager').length;
+      if (managerMessages >= 3) {
+        const phases: Phase[] = ['greeting', 'needs', 'presentation', 'objections', 'closing'];
+        const currentIndex = phases.indexOf(battlePhase);
+        if (currentIndex < phases.length - 1) {
+          setTimeout(() => {
+            setBattlePhase(phases[currentIndex + 1]);
+            toast({
+              title: 'Новая фаза!',
+              description: `Переход к фазе: ${phases[currentIndex + 1]}`,
+            });
+          }, 2000);
+        }
+      }
+    }, 1500);
   };
 
   const handleFinishMatch = (winnerId: string) => {
     if (!currentMatch || !tournament) return;
 
     const winner = currentMatch.player1?.id === winnerId ? currentMatch.player1 : currentMatch.player2;
+    const finalScore1 = currentMatch.score1 || 0;
+    const finalScore2 = currentMatch.score2 || 0;
     
     // Обновляем матч
     const updatedMatches = tournament.matches.map(m => 
       m.id === currentMatch.id 
-        ? { ...m, winner, status: 'completed' as const, score1: 850, score2: 720 }
+        ? { ...m, winner, status: 'completed' as const, score1: finalScore1, score2: finalScore2 }
         : m
     );
 
@@ -518,12 +596,19 @@ export default function SalesBattle() {
                 <div className="text-4xl font-bold mb-2">
                   {Math.floor(battleTimer / 60)}:{(battleTimer % 60).toString().padStart(2, '0')}
                 </div>
-                <Badge className="bg-brand">
+                <Badge className="bg-brand mb-2">
                   Фаза: {battlePhase === 'greeting' ? 'Приветствие' : 
                          battlePhase === 'needs' ? 'Выявление потребности' :
                          battlePhase === 'presentation' ? 'Презентация' :
                          battlePhase === 'objections' ? 'Возражения' : 'Закрытие'}
                 </Badge>
+                <p className="text-xs text-muted-foreground mt-2">
+                  💡 {battlePhase === 'greeting' ? 'Представьтесь и установите контакт' :
+                      battlePhase === 'needs' ? 'Задайте вопросы, узнайте о проблеме' :
+                      battlePhase === 'presentation' ? 'Расскажите о решении, упомяните результаты' :
+                      battlePhase === 'objections' ? 'Работайте с сомнениями: гарантии, рассрочка, отзывы' :
+                      'Предложите конкретное действие: запись, встреча'}
+                </p>
               </div>
 
               {/* Players */}
@@ -540,9 +625,9 @@ export default function SalesBattle() {
                       Уровень {currentMatch.player1?.level}
                     </p>
                     <div className="text-3xl font-bold text-blue-600 mb-2">
-                      {currentMatch.score1 || 0}
+                      {currentMatch.score1 || 0} 🔥
                     </div>
-                    <Progress value={45} className="h-2" />
+                    <Progress value={(currentMatch.score1 || 0) / 10} className="h-2" />
                   </div>
                 </Card>
 
@@ -558,35 +643,100 @@ export default function SalesBattle() {
                       Уровень {currentMatch.player2?.level}
                     </p>
                     <div className="text-3xl font-bold text-purple-600 mb-2">
-                      {currentMatch.score2 || 0}
+                      {currentMatch.score2 || 0} 🔥
                     </div>
-                    <Progress value={38} className="h-2" />
+                    <Progress value={(currentMatch.score2 || 0) / 10} className="h-2" />
                   </div>
                 </Card>
               </div>
 
-              {/* Demo Actions */}
-              <Card className="p-6 bg-muted/50">
-                <p className="text-center text-sm text-muted-foreground mb-4">
-                  Демо-режим. Выберите победителя:
-                </p>
-                <div className="flex gap-4">
+              {/* Chat Dialog */}
+              <Card className="p-4">
+                <div className="mb-3">
+                  <h4 className="font-semibold mb-1 flex items-center gap-2">
+                    <Icon name="MessageCircle" size={16} />
+                    Диалог с клиентом
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    Ведите переговоры с ИИ-клиентом. За качество получаете очки.
+                  </p>
+                </div>
+                
+                <ScrollArea className="h-64 w-full rounded-md border p-4 mb-3">
+                  {chatHistory.map((msg, idx) => (
+                    <div 
+                      key={idx} 
+                      className={`mb-3 ${msg.role === 'manager' ? 'text-right' : 'text-left'}`}
+                    >
+                      <div className={`inline-block max-w-[80%] p-3 rounded-lg ${
+                        msg.role === 'manager' 
+                          ? 'bg-blue-500 text-white' 
+                          : 'bg-muted'
+                      }`}>
+                        <p className="text-xs font-semibold mb-1 opacity-70">
+                          {msg.role === 'manager' ? currentMatch.player1?.name : 'Клиент'}
+                        </p>
+                        <p className="text-sm">{msg.content}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {isAIThinking && (
+                    <div className="text-left mb-3">
+                      <div className="inline-block bg-muted p-3 rounded-lg">
+                        <p className="text-sm text-muted-foreground">Клиент печатает...</p>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={chatEndRef} />
+                </ScrollArea>
+
+                <div className="flex gap-2">
+                  <Textarea
+                    value={playerInput}
+                    onChange={(e) => setPlayerInput(e.target.value)}
+                    placeholder="Напишите сообщение клиенту..."
+                    className="flex-1 min-h-[80px]"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                  />
                   <Button 
-                    onClick={() => handleFinishMatch(currentMatch.player1!.id)}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700"
+                    onClick={handleSendMessage} 
+                    disabled={!playerInput.trim() || isAIThinking}
+                    className="bg-brand hover:bg-brand/90"
                   >
-                    <Icon name="Crown" size={16} className="mr-2" />
-                    {currentMatch.player1?.name} побеждает
-                  </Button>
-                  <Button 
-                    onClick={() => handleFinishMatch(currentMatch.player2!.id)}
-                    className="flex-1 bg-purple-600 hover:bg-purple-700"
-                  >
-                    <Icon name="Crown" size={16} className="mr-2" />
-                    {currentMatch.player2?.name} побеждает
+                    <Icon name="Send" size={16} />
                   </Button>
                 </div>
               </Card>
+
+              {/* Finish Match */}
+              {battlePhase === 'closing' && chatHistory.length > 8 && (
+                <Card className="p-4 bg-green-500/10 border-green-500/30">
+                  <p className="text-sm text-center mb-3">
+                    Диалог завершён. Определите победителя по количеству очков:
+                  </p>
+                  <div className="flex gap-4">
+                    <Button 
+                      onClick={() => handleFinishMatch(currentMatch.player1!.id)}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700"
+                    >
+                      <Icon name="Crown" size={16} className="mr-2" />
+                      {currentMatch.player1?.name} ({currentMatch.score1})
+                    </Button>
+                    <Button 
+                      onClick={() => handleFinishMatch(currentMatch.player2!.id)}
+                      className="flex-1 bg-purple-600 hover:bg-purple-700"
+                    >
+                      <Icon name="Crown" size={16} className="mr-2" />
+                      {currentMatch.player2?.name} ({currentMatch.score2})
+                    </Button>
+                  </div>
+                </Card>
+              )}
             </div>
           )}
         </DialogContent>
