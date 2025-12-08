@@ -119,12 +119,14 @@ export default function SalesBattle() {
       }
 
       const data = await response.json();
-      const loadedCompanies: Company[] = data.map((c: any, idx: number) => ({
-        id: c.id.toString(),
-        name: c.name,
-        color: ['blue', 'purple', 'green', 'orange', 'red', 'pink'][idx % 6],
-      }));
-      setCompanies(loadedCompanies);
+      if (data.companies && Array.isArray(data.companies)) {
+        const loadedCompanies: Company[] = data.companies.map((c: any, idx: number) => ({
+          id: c.id.toString(),
+          name: c.name,
+          color: ['blue', 'purple', 'green', 'orange', 'red', 'pink'][idx % 6],
+        }));
+        setCompanies(loadedCompanies);
+      }
     } catch (error) {
       console.error('Error loading companies:', error);
       toast({
