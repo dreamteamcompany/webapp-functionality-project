@@ -26,7 +26,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { authService } from '@/lib/auth';
 
-const API_URL = 'https://functions.poehali.dev/227369fe-07ca-4f0c-b8ee-f647263e78d9';
+const API_URL = 'https://functions.poehali.dev/1b4dc582-22ef-43ae-a0e6-826470c1c058';
 
 interface Company {
   id: string;
