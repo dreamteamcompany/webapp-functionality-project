@@ -25,6 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { generateAIResponse, type Message, type Phase } from '@/lib/ai-patient';
+import { authService } from '@/lib/auth';
 
 interface Company {
   id: string;
@@ -103,12 +104,12 @@ export default function SalesBattle() {
   const loadCompanies = async () => {
     setIsLoadingCompanies(true);
     try {
-      const sessionToken = localStorage.getItem('sessionToken');
       const response = await fetch(
         'https://functions.poehali.dev/227369fe-07ca-4f0c-b8ee-f647263e78d9?entity_type=company',
         {
           headers: {
-            'X-Session-Token': sessionToken || '',
+            'Content-Type': 'application/json',
+            'X-Session-Token': authService.getSessionToken() || '',
           },
         }
       );
