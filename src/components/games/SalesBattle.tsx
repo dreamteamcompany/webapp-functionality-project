@@ -105,7 +105,7 @@ export default function SalesBattle() {
     try {
       const sessionToken = localStorage.getItem('sessionToken');
       const response = await fetch(
-        'https://functions.poehali.dev/84c50fe2-5023-4c9a-92fd-f9f82cdc6c22?entity_type=company',
+        'https://functions.poehali.dev/227369fe-07ca-4f0c-b8ee-f647263e78d9?entity_type=company',
         {
           headers: {
             'X-Session-Token': sessionToken || '',

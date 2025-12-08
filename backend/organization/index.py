@@ -68,7 +68,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         return {
             'statusCode': 200,
             'headers': cors_headers,
-            'body': '',
+            'body': json.dumps({}),
             'isBase64Encoded': False
         }
     
