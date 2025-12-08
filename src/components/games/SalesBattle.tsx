@@ -65,12 +65,7 @@ interface Tournament {
   winner: SalesManager | null;
 }
 
-const mockCompanies: Company[] = [
-  { id: '1', name: 'СтомаЛюкс', color: 'blue' },
-  { id: '2', name: 'ДентаПро', color: 'purple' },
-  { id: '3', name: 'ЗдоровоДент', color: 'green' },
-  { id: '4', name: 'МедиСмайл', color: 'orange' },
-];
+
 
 const mockManagers: SalesManager[] = [
   { id: '1', name: 'Анна Петрова', companyId: '1', avatar: 'АП', level: 8, wins: 24, losses: 6 },
@@ -97,6 +92,49 @@ export default function SalesBattle() {
   const [playerInput, setPlayerInput] = useState('');
   const [isAIThinking, setIsAIThinking] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [isLoadingCompanies, setIsLoadingCompanies] = useState(false);
+
+  // Загрузка компаний из БД
+  useEffect(() => {
+    loadCompanies();
+  }, []);
+
+  const loadCompanies = async () => {
+    setIsLoadingCompanies(true);
+    try {
+      const sessionToken = localStorage.getItem('sessionToken');
+      const response = await fetch(
+        'https://functions.poehali.dev/84c50fe2-5023-4c9a-92fd-f9f82cdc6c22?entity_type=company',
+        {
+          headers: {
+            'X-Session-Token': sessionToken || '',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to load companies');
+      }
+
+      const data = await response.json();
+      const loadedCompanies: Company[] = data.map((c: any, idx: number) => ({
+        id: c.id.toString(),
+        name: c.name,
+        color: ['blue', 'purple', 'green', 'orange', 'red', 'pink'][idx % 6],
+      }));
+      setCompanies(loadedCompanies);
+    } catch (error) {
+      console.error('Error loading companies:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось загрузить список компаний',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoadingCompanies(false);
+    }
+  };
 
   // Автоскролл чата
   useEffect(() => {
@@ -133,8 +171,8 @@ export default function SalesBattle() {
       return;
     }
 
-    const companyA = mockCompanies.find(c => c.id === selectedCompanyA)!;
-    const companyB = mockCompanies.find(c => c.id === selectedCompanyB)!;
+    const companyA = companies.find(c => c.id === selectedCompanyA)!;
+    const companyB = companies.find(c => c.id === selectedCompanyB)!;
     
     const managersA = mockManagers.filter(m => m.companyId === selectedCompanyA);
     const managersB = mockManagers.filter(m => m.companyId === selectedCompanyB);
@@ -522,12 +560,12 @@ export default function SalesBattle() {
           <div className="space-y-6 py-4">
             <div>
               <Label>Компания A</Label>
-              <Select value={selectedCompanyA} onValueChange={setSelectedCompanyA}>
+              <Select value={selectedCompanyA} onValueChange={setSelectedCompanyA} disabled={isLoadingCompanies}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Выберите компанию" />
+                  <SelectValue placeholder={isLoadingCompanies ? 'Загрузка...' : 'Выберите компанию'} />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockCompanies.map(company => (
+                  {companies.map(company => (
                     <SelectItem key={company.id} value={company.id}>
                       {company.name} ({mockManagers.filter(m => m.companyId === company.id).length} менеджеров)
                     </SelectItem>
@@ -538,12 +576,12 @@ export default function SalesBattle() {
 
             <div>
               <Label>Компания B</Label>
-              <Select value={selectedCompanyB} onValueChange={setSelectedCompanyB}>
+              <Select value={selectedCompanyB} onValueChange={setSelectedCompanyB} disabled={isLoadingCompanies}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Выберите компанию" />
+                  <SelectValue placeholder={isLoadingCompanies ? 'Загрузка...' : 'Выберите компанию'} />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockCompanies.map(company => (
+                  {companies.map(company => (
                     <SelectItem key={company.id} value={company.id} disabled={company.id === selectedCompanyA}>
                       {company.name} ({mockManagers.filter(m => m.companyId === company.id).length} менеджеров)
                     </SelectItem>
