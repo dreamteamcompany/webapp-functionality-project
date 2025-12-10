@@ -1,7 +1,3 @@
 {
-  "unified-api": "https://functions.poehali.dev/6ea6ed72-8e1a-48a2-90c8-589a4810e873",
-  "webapp-functionality": "https://functions.poehali.dev/1b4dc582-22ef-43ae-a0e6-826470c1c058",
-  "access-groups": "https://functions.poehali.dev/a2c227f5-7853-45de-837a-b5b92bf15a1d",
-  "organization": "https://functions.poehali.dev/227369fe-07ca-4f0c-b8ee-f647263e78d9",
-  "auth": "https://functions.poehali.dev/d0d8a117-25d4-4bae-9e4d-c6192bbe7497"
+  "unified-api": "https://functions.poehali.dev/6ea6ed72-8e1a-48a2-90c8-589a4810e873"
 }
