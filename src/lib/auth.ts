@@ -1,7 +1,4 @@
-const AUTH_API_URL = 'https://functions.poehali.dev/d0d8a117-25d4-4bae-9e4d-c6192bbe7497';
-const USERS_API_URL = 'https://functions.poehali.dev/aa434c46-4b09-4a1f-a196-d854bed8176c';
-const ACCESS_GROUPS_API_URL = 'https://functions.poehali.dev/a2c227f5-7853-45de-837a-b5b92bf15a1d';
-const AUDIT_API_URL = 'https://functions.poehali.dev/8698496d-ca4c-4393-a952-ada40d9a22d9';
+const API_URL = 'https://functions.poehali.dev/6ea6ed72-8e1a-48a2-90c8-589a4810e873';
 
 export interface User {
   id: number;
@@ -54,7 +51,7 @@ class AuthService {
   }
 
   async login(username: string, password: string): Promise<AuthResponse> {
-    const response = await fetch(AUTH_API_URL, {
+    const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -87,7 +84,7 @@ class AuthService {
   async logout(): Promise<void> {
     if (this.sessionToken) {
       try {
-        await fetch(AUTH_API_URL, {
+        await fetch(API_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -121,7 +118,7 @@ class AuthService {
 
     try {
       console.log('[AUTH] Sending validation request...');
-      const response = await fetch(AUTH_API_URL, {
+      const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -193,4 +190,4 @@ class AuthService {
 }
 
 export const authService = new AuthService();
-export { AUTH_API_URL, USERS_API_URL, ACCESS_GROUPS_API_URL, AUDIT_API_URL };
+export { API_URL };
