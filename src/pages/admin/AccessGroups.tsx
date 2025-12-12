@@ -9,7 +9,9 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
-import { authService, ACCESS_GROUPS_API_URL } from '@/lib/auth';
+import { authService, API_URL } from '@/lib/auth';
+
+const ACCESS_GROUPS_API_URL = `${API_URL}/groups`;
 import { useToast } from '@/hooks/use-toast';
 
 interface AccessGroup {

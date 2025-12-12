@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Icon from '@/components/ui/icon';
-import { authService } from '@/lib/auth';
+import { authService, API_URL } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 
-const AUDIT_API_URL = 'https://functions.poehali.dev/8698496d-ca4c-4393-a952-ada40d9a22d9';
+const AUDIT_API_URL = `${API_URL}/audit`;
 
 interface AuditLog {
   id: number;

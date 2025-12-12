@@ -8,7 +8,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
-import { authService, USERS_API_URL } from '@/lib/auth';
+import { authService, API_URL } from '@/lib/auth';
+
+const USERS_API_URL = `${API_URL}/users`;
 import { useToast } from '@/hooks/use-toast';
 
 interface User {
