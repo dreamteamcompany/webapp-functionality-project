@@ -3,12 +3,12 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
-import { authService } from '@/lib/auth';
+import { authService, API_URL as AUTH_API_URL } from '@/lib/auth';
 import TournamentSetup from './SalesBattle/TournamentSetup';
 import TournamentBracket from './SalesBattle/TournamentBracket';
 import BattleDialog from './SalesBattle/BattleDialog';
 
-const API_URL = 'https://functions.poehali.dev/1b4dc582-22ef-43ae-a0e6-826470c1c058';
+const API_URL = AUTH_API_URL;
 
 interface Company {
   id: string;

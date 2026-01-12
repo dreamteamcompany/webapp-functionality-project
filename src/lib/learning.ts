@@ -1,1 +1,1 @@
-export const LEARNING_API_URL = 'https://functions.poehali.dev/3568d4a6-4d1f-4315-a612-959a363577fa';
+export const LEARNING_API_URL = 'https://functions.poehali.dev/6ea6ed72-8e1a-48a2-90c8-589a4810e873';

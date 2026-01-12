@@ -6,6 +6,7 @@ import secrets
 from datetime import datetime, timedelta
 from urllib.parse import parse_qs
 
+# Unified API v2 - handles all business logic (auth, learning, companies, battles)
 DATABASE_URL = os.environ.get('DATABASE_URL', '')
 SEARCH_PATH = 't_p66738329_webapp_functionality'
 
@@ -794,6 +795,138 @@ def handle_trainer(method, query_params, body, headers):
     
     return {'statusCode': 405, 'body': json.dumps({'error': 'Method not allowed'})}
 
+def handle_course_progress(method, query_params, body, headers):
+    user_id = headers.get('x-user-id', '')
+    if not user_id:
+        return {'statusCode': 401, 'body': json.dumps({'error': 'User ID required'})}
+    
+    conn = get_db_connection()
+    try:
+        if method == 'GET':
+            with conn.cursor() as cur:
+                cur.execute(f"""
+                    SELECT cp.id, cp.course_id, c.title, cp.status, cp.progress_percentage, cp.started_at
+                    FROM course_progress cp
+                    JOIN courses c ON cp.course_id = c.id
+                    WHERE cp.user_id = {user_id}
+                    ORDER BY cp.started_at DESC
+                """)
+                progress_list = []
+                for row in cur.fetchall():
+                    progress_list.append({
+                        'id': row[0], 'course_id': row[1], 'title': row[2],
+                        'status': row[3], 'progress_percentage': row[4],
+                        'started_at': str(row[5])
+                    })
+                return {'statusCode': 200, 'body': json.dumps(progress_list)}
+        
+        elif method == 'POST':
+            item_id = body.get('item_id')
+            if not item_id:
+                return {'statusCode': 400, 'body': json.dumps({'error': 'Course ID required'})}
+            
+            with conn.cursor() as cur:
+                cur.execute(f"""
+                    INSERT INTO course_progress (user_id, course_id, status, progress_percentage)
+                    VALUES ({user_id}, {item_id}, 'in_progress', 0)
+                    RETURNING id
+                """)
+                new_id = cur.fetchone()[0]
+                conn.commit()
+            
+            return {'statusCode': 201, 'body': json.dumps({'id': new_id, 'message': 'Course progress started'})}
+        
+        elif method == 'PUT':
+            progress_id = body.get('id')
+            if not progress_id:
+                return {'statusCode': 400, 'body': json.dumps({'error': 'Progress ID required'})}
+            
+            updates = []
+            if 'status' in body:
+                updates.append(f"status = '{body['status']}'")
+            if 'progress_percentage' in body:
+                updates.append(f"progress_percentage = {body['progress_percentage']}")
+            if body.get('status') == 'completed':
+                updates.append("completed_at = NOW()")
+            
+            if updates:
+                with conn.cursor() as cur:
+                    cur.execute(f"UPDATE course_progress SET {', '.join(updates)} WHERE id = {progress_id} AND user_id = {user_id}")
+                    conn.commit()
+            
+            return {'statusCode': 200, 'body': json.dumps({'message': 'Progress updated'})}
+    
+    finally:
+        conn.close()
+    
+    return {'statusCode': 405, 'body': json.dumps({'error': 'Method not allowed'})}
+
+def handle_trainer_progress(method, query_params, body, headers):
+    user_id = headers.get('x-user-id', '')
+    if not user_id:
+        return {'statusCode': 401, 'body': json.dumps({'error': 'User ID required'})}
+    
+    conn = get_db_connection()
+    try:
+        if method == 'GET':
+            with conn.cursor() as cur:
+                cur.execute(f"""
+                    SELECT tp.id, tp.trainer_id, t.title, tp.status, tp.score, tp.started_at
+                    FROM trainer_progress tp
+                    JOIN trainers t ON tp.trainer_id = t.id
+                    WHERE tp.user_id = {user_id}
+                    ORDER BY tp.started_at DESC
+                """)
+                progress_list = []
+                for row in cur.fetchall():
+                    progress_list.append({
+                        'id': row[0], 'trainer_id': row[1], 'title': row[2],
+                        'status': row[3], 'score': row[4],
+                        'started_at': str(row[5])
+                    })
+                return {'statusCode': 200, 'body': json.dumps(progress_list)}
+        
+        elif method == 'POST':
+            item_id = body.get('item_id')
+            if not item_id:
+                return {'statusCode': 400, 'body': json.dumps({'error': 'Trainer ID required'})}
+            
+            with conn.cursor() as cur:
+                cur.execute(f"""
+                    INSERT INTO trainer_progress (user_id, trainer_id, status, score)
+                    VALUES ({user_id}, {item_id}, 'in_progress', 0)
+                    RETURNING id
+                """)
+                new_id = cur.fetchone()[0]
+                conn.commit()
+            
+            return {'statusCode': 201, 'body': json.dumps({'id': new_id, 'message': 'Trainer progress started'})}
+        
+        elif method == 'PUT':
+            progress_id = body.get('id')
+            if not progress_id:
+                return {'statusCode': 400, 'body': json.dumps({'error': 'Progress ID required'})}
+            
+            updates = []
+            if 'status' in body:
+                updates.append(f"status = '{body['status']}'")
+            if 'score' in body:
+                updates.append(f"score = {body['score']}")
+            if body.get('status') == 'completed':
+                updates.append("completed_at = NOW()")
+            
+            if updates:
+                with conn.cursor() as cur:
+                    cur.execute(f"UPDATE trainer_progress SET {', '.join(updates)} WHERE id = {progress_id} AND user_id = {user_id}")
+                    conn.commit()
+            
+            return {'statusCode': 200, 'body': json.dumps({'message': 'Progress updated'})}
+    
+    finally:
+        conn.close()
+    
+    return {'statusCode': 405, 'body': json.dumps({'error': 'Method not allowed'})}
+
 def handle_sales_manager(method, query_params, body, headers):
     session_token = headers.get('x-session-token', '')
     user = validate_session(session_token)
@@ -1249,9 +1382,10 @@ def handler(event, context):
         if event.get('body'):
             body = json.loads(event['body'])
         
-        # Route based on entity or entity_type parameter
+        # Route based on entity, entity_type, or resource parameter
         entity = query_params.get('entity', [''])[0]
         entity_type = query_params.get('entity_type', [''])[0]
+        resource = query_params.get('resource', [''])[0]
         
         # Auth API routing (entity parameter)
         if entity == 'auth':
@@ -1260,6 +1394,19 @@ def handler(event, context):
             response = handle_users(method, query_params, body, headers)
         elif entity == 'access_groups':
             response = handle_access_groups(method, query_params, body, headers)
+        # Learning API routing (resource parameter)
+        elif resource == 'courses':
+            response = handle_course(method, query_params, body, headers)
+        elif resource == 'trainers':
+            response = handle_trainer(method, query_params, body, headers)
+        elif resource == 'progress':
+            progress_type = query_params.get('type', [''])[0]
+            if progress_type == 'course':
+                response = handle_course_progress(method, query_params, body, headers)
+            elif progress_type == 'trainer':
+                response = handle_trainer_progress(method, query_params, body, headers)
+            else:
+                response = {'statusCode': 400, 'body': json.dumps({'error': 'Invalid progress type'})}
         # Business API routing (entity_type parameter)
         elif entity_type == 'company':
             response = handle_company(method, query_params, body, headers)
@@ -1276,7 +1423,7 @@ def handler(event, context):
         elif entity_type == 'battle':
             response = handle_battle(method, query_params, body, headers)
         else:
-            response = {'statusCode': 400, 'body': json.dumps({'error': 'Invalid entity or entity_type parameter'})}
+            response = {'statusCode': 400, 'body': json.dumps({'error': 'Invalid entity, entity_type, or resource parameter'})}
         
         response['headers'] = CORS_HEADERS
         return response

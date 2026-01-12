@@ -40,7 +40,7 @@ interface Department {
   is_active: boolean;
 }
 
-const COMPANIES_API_URL = 'https://functions.poehali.dev/227369fe-07ca-4f0c-b8ee-f647263e78d9';
+const COMPANIES_API_URL = API_URL;
 
 export default function UsersAdmin() {
   const navigate = useNavigate();

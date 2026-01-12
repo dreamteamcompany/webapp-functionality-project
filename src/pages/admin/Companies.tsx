@@ -15,7 +15,7 @@ import Icon from '@/components/ui/icon';
 import { authService, API_URL as AUTH_API_URL } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 
-const API_URL = 'https://functions.poehali.dev/227369fe-07ca-4f0c-b8ee-f647263e78d9';
+const API_URL = AUTH_API_URL;
 const ACCESS_GROUPS_API_URL = `${AUTH_API_URL}/groups`;
 
 interface Company {

@@ -70,8 +70,7 @@ export default function LearningAnalytics() {
     if (!userId) return;
 
     try {
-      const orgUrl = 'https://functions.poehali.dev/227369fe-07ca-4f0c-b8ee-f647263e78d9';
-      const response = await fetch(`${orgUrl}?entity_type=department`, {
+      const response = await fetch(`${LEARNING_API_URL}?entity_type=department`, {
         headers: { 'X-User-Id': userId.toString() },
       });
       const data = await response.json();
