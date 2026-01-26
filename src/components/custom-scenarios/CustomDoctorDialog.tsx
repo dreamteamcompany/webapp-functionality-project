@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { CustomScenario } from '@/types/customScenario';
-import { CustomPatientAI, ConversationAnalysis } from '@/lib/customPatientAI';
+import { AdvancedPatientAI, ConversationAnalysis } from '@/lib/advancedPatientAI';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,7 +17,7 @@ interface CustomDoctorDialogProps {
 }
 
 export default function CustomDoctorDialog({ scenario, open, onClose }: CustomDoctorDialogProps) {
-  const [ai, setAi] = useState<CustomPatientAI | null>(null);
+  const [ai, setAi] = useState<AdvancedPatientAI | null>(null);
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'ai'; content: string }>>([]);
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -27,7 +27,7 @@ export default function CustomDoctorDialog({ scenario, open, onClose }: CustomDo
 
   useEffect(() => {
     if (scenario && open) {
-      const newAi = new CustomPatientAI(scenario);
+      const newAi = new AdvancedPatientAI(scenario);
       setAi(newAi);
       const greeting = newAi.getGreeting();
       setMessages([{ role: 'ai', content: greeting }]);
