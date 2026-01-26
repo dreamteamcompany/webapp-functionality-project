@@ -7,11 +7,12 @@ import { Course } from './types';
 
 interface CourseDialogProps {
   course: Course | null;
-  onClose: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onCompleteLesson: (courseId: number, lessonId: number) => void;
 }
 
-export default function CourseDialog({ course, onClose, onCompleteLesson }: CourseDialogProps) {
+export default function CourseDialog({ course, open, onOpenChange, onCompleteLesson }: CourseDialogProps) {
   if (!course) return null;
 
   const getLessonIcon = (type: 'video' | 'text' | 'quiz') => {
@@ -28,7 +29,7 @@ export default function CourseDialog({ course, onClose, onCompleteLesson }: Cour
   };
 
   return (
-    <Dialog open={!!course} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">{course.title}</DialogTitle>
