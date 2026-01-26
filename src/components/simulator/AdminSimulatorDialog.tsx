@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,10 +12,10 @@ import AchievementsDialog from './AchievementsDialog';
 
 interface AdminSimulatorDialogProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onClose: () => void;
 }
 
-export default function AdminSimulatorDialog({ open, onOpenChange }: AdminSimulatorDialogProps) {
+export default function AdminSimulatorDialog({ open, onClose }: AdminSimulatorDialogProps) {
   const [selectedScenario, setSelectedScenario] = useState<string | null>(null);
   const [simulator, setSimulator] = useState<AdminSimulator | null>(null);
   const [currentChoices, setCurrentChoices] = useState<DialogueChoice[]>([]);
@@ -102,7 +102,7 @@ export default function AdminSimulatorDialog({ open, onOpenChange }: AdminSimula
 
   const handleClose = () => {
     handleRestart();
-    onOpenChange(false);
+    onClose();
   };
 
   const state = useMemo(() => simulator?.getState(), [simulator, forceUpdate]);
@@ -134,16 +134,16 @@ export default function AdminSimulatorDialog({ open, onOpenChange }: AdminSimula
   // Выбор сценария
   if (!selectedScenario || !simulator) {
     return (
-      <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
+      <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 text-2xl">
               <Icon name="Users" size={28} className="text-purple-600" />
               Симулятор администратора
             </DialogTitle>
-            <DialogDescription>
+            <p className="text-muted-foreground mt-2">
               Практикуйте навыки общения с пациентами в реалистичных сценариях
-            </DialogDescription>
+            </p>
           </DialogHeader>
 
           {/* Статистика достижений */}
@@ -238,13 +238,13 @@ export default function AdminSimulatorDialog({ open, onOpenChange }: AdminSimula
 
   // Игровой процесс
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>
               <DialogTitle className="text-xl mb-1">{state?.scenario.title}</DialogTitle>
-              <DialogDescription>{state?.scenario.patientName}</DialogDescription>
+              <p className="text-sm text-muted-foreground">{state?.scenario.patientName}</p>
             </div>
             <Button variant="ghost" size="sm" onClick={handleRestart}>
               <Icon name="RotateCcw" size={16} className="mr-2" />

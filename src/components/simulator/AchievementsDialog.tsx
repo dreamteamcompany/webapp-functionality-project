@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -62,16 +62,13 @@ export default function AchievementsDialog({ open, onClose }: AchievementsDialog
   };
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+    <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 text-2xl">
             <Icon name="Trophy" size={28} className="text-yellow-600" />
             Достижения симулятора
           </DialogTitle>
-          <DialogDescription>
-            Ваш прогресс и разблокированные достижения
-          </DialogDescription>
         </DialogHeader>
 
         {/* Общая статистика */}

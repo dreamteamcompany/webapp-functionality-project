@@ -335,7 +335,6 @@ export default function Index() {
         currentUser={currentUser}
         onLogout={handleLogout}
         onNavigateToAdmin={() => navigate('/admin')}
-        onNavigateToScenarios={() => navigate('/scenarios')}
       />
 
       <main className="container mx-auto px-6 py-8">

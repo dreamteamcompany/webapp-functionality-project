@@ -21,14 +21,12 @@ interface DashboardHeaderProps {
   currentUser: User | null;
   onLogout: () => void;
   onNavigateToAdmin: () => void;
-  onNavigateToScenarios?: () => void;
 }
 
 export default function DashboardHeader({
   currentUser,
   onLogout,
   onNavigateToAdmin,
-  onNavigateToScenarios,
 }: DashboardHeaderProps) {
   const getUserInitials = (name: string) => {
     return name
@@ -53,13 +51,6 @@ export default function DashboardHeader({
           </div>
 
           <div className="flex items-center gap-4">
-            {onNavigateToScenarios && (
-              <Button variant="outline" onClick={onNavigateToScenarios} className="gap-2">
-                <Icon name="Layers" size={18} />
-                <span className="hidden md:inline">Конструктор сценариев</span>
-              </Button>
-            )}
-            
             <Button variant="ghost" size="icon">
               <Icon name="Bell" size={20} />
             </Button>
