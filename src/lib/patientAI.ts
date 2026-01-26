@@ -169,8 +169,21 @@ export class PatientAI {
   private nonsenseMessageCount = 0;
   private consecutiveNonsense = 0;
 
-  constructor(scenario: 'consultation' | 'treatment' | 'emergency' | 'objections') {
+  constructor(scenario?: 'consultation' | 'treatment' | 'emergency' | 'objections') {
+    this.profile = this.createProfile(scenario || 'consultation');
+  }
+
+  startConversation(scenario: 'consultation' | 'treatment' | 'emergency' | 'objections'): void {
     this.profile = this.createProfile(scenario);
+    this.conversationHistory = [];
+    this.askedAboutSymptoms = false;
+    this.showedEmpathy = false;
+    this.explainedClearly = false;
+    this.askedAboutConcerns = false;
+    this.messageCount = 0;
+    this.lastObjection = '';
+    this.nonsenseMessageCount = 0;
+    this.consecutiveNonsense = 0;
   }
 
   private createProfile(scenario: string): PatientProfile {
