@@ -13,11 +13,11 @@ import { ConversationAnalysis } from '@/lib/patientAI';
 
 interface TrainerDialogsProps {
   quizDialog: boolean;
-  setQuizDialog: (open: boolean) => void;
+  onQuizDialogChange: (open: boolean) => void;
   voiceDialog: boolean;
-  setVoiceDialog: (open: boolean) => void;
+  onVoiceDialogChange: (open: boolean) => void;
   doctorDialog: boolean;
-  setDoctorDialog: (open: boolean) => void;
+  onDoctorDialogChange: (open: boolean) => void;
   currentQuizQuestion: number;
   quizAnswers: number[];
   quizScore: number | null;
@@ -27,35 +27,33 @@ interface TrainerDialogsProps {
   voiceAnalysis: SpeechAnalysisResult | null;
   voiceStream: MediaStream | null;
   doctorScenario: string;
-  setDoctorScenario: (scenario: string) => void;
+  onDoctorScenarioChange: (scenario: string) => void;
   doctorMessages: Array<{ role: 'admin' | 'patient'; content: string }>;
   doctorInput: string;
-  setDoctorInput: (input: string) => void;
+  onDoctorInputChange: (input: string) => void;
   conversationAnalysis: ConversationAnalysis | null;
   isDoctorRecording: boolean;
   doctorVoiceStream: MediaStream | null;
-  handleFinishConversation: () => void;
-  handleRestartConversation: () => void;
-  handleChangeScenario: (scenario: 'consultation' | 'treatment' | 'emergency' | 'objections') => void;
-  handleStartDoctorRecording: () => void;
-  handleStopDoctorRecording: () => void;
-  handleQuizAnswer: (questionIndex: number, answerIndex: number) => void;
-  handleNextQuizQuestion: () => void;
-  handlePrevQuizQuestion: () => void;
-  handleRestartQuiz: () => void;
-  handleStartRecording: () => void;
-  handleStopRecording: () => void;
-  handleNextVoiceStep: () => void;
-  handleSendDoctorMessage: () => void;
+  onEndDoctorConversation: () => void;
+  onStartDoctorRecording: () => void;
+  onStopDoctorRecording: () => void;
+  onQuizAnswer: (questionIndex: number, answerIndex: number) => void;
+  onNextQuizQuestion: () => void;
+  onPrevQuizQuestion: () => void;
+  onRestartQuiz: () => void;
+  onStartRecording: () => void;
+  onStopRecording: () => void;
+  onNextVoiceStep: () => void;
+  onSendDoctorMessage: () => void;
 }
 
 export default function TrainerDialogs({
   quizDialog,
-  setQuizDialog,
+  onQuizDialogChange,
   voiceDialog,
-  setVoiceDialog,
+  onVoiceDialogChange,
   doctorDialog,
-  setDoctorDialog,
+  onDoctorDialogChange,
   currentQuizQuestion,
   quizAnswers,
   quizScore,
@@ -65,31 +63,29 @@ export default function TrainerDialogs({
   voiceAnalysis,
   voiceStream,
   doctorScenario,
-  setDoctorScenario,
+  onDoctorScenarioChange,
   doctorMessages,
   doctorInput,
-  setDoctorInput,
+  onDoctorInputChange,
   conversationAnalysis,
   isDoctorRecording,
   doctorVoiceStream,
-  handleQuizAnswer,
-  handleNextQuizQuestion,
-  handlePrevQuizQuestion,
-  handleRestartQuiz,
-  handleStartRecording,
-  handleStopRecording,
-  handleNextVoiceStep,
-  handleSendDoctorMessage,
-  handleFinishConversation,
-  handleRestartConversation,
-  handleChangeScenario,
-  handleStartDoctorRecording,
-  handleStopDoctorRecording,
+  onQuizAnswer,
+  onNextQuizQuestion,
+  onPrevQuizQuestion,
+  onRestartQuiz,
+  onStartRecording,
+  onStopRecording,
+  onNextVoiceStep,
+  onSendDoctorMessage,
+  onEndDoctorConversation,
+  onStartDoctorRecording,
+  onStopDoctorRecording,
 }: TrainerDialogsProps) {
   return (
     <>
       {/* Quiz Dialog */}
-      <Dialog open={quizDialog} onOpenChange={setQuizDialog}>
+      <Dialog open={quizDialog} onOpenChange={onQuizDialogChange}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Тестовый тренажер</DialogTitle>
@@ -117,7 +113,7 @@ export default function TrainerDialogs({
                       key={index}
                       variant={quizAnswers[currentQuizQuestion] === index ? 'default' : 'outline'}
                       className="w-full justify-start"
-                      onClick={() => handleQuizAnswer(currentQuizQuestion, index)}
+                      onClick={() => onQuizAnswer(currentQuizQuestion, index)}
                     >
                       {option}
                     </Button>
@@ -128,14 +124,14 @@ export default function TrainerDialogs({
               <div className="flex justify-between">
                 <Button
                   variant="outline"
-                  onClick={handlePrevQuizQuestion}
+                  onClick={onPrevQuizQuestion}
                   disabled={currentQuizQuestion === 0}
                 >
                   <Icon name="ChevronLeft" size={16} className="mr-2" />
                   Назад
                 </Button>
                 <Button
-                  onClick={handleNextQuizQuestion}
+                  onClick={onNextQuizQuestion}
                   disabled={quizAnswers[currentQuizQuestion] === undefined}
                 >
                   {currentQuizQuestion === mockQuizQuestions.length - 1 ? 'Завершить' : 'Далее'}
@@ -159,10 +155,10 @@ export default function TrainerDialogs({
                 </p>
               </div>
               <div className="flex gap-4 justify-center">
-                <Button variant="outline" onClick={() => setQuizDialog(false)}>
+                <Button variant="outline" onClick={() => onQuizDialogChange(false)}>
                   Закрыть
                 </Button>
-                <Button onClick={handleRestartQuiz}>
+                <Button onClick={onRestartQuiz}>
                   Пройти снова
                 </Button>
               </div>
@@ -172,7 +168,7 @@ export default function TrainerDialogs({
       </Dialog>
 
       {/* Voice Dialog */}
-      <Dialog open={voiceDialog} onOpenChange={setVoiceDialog}>
+      <Dialog open={voiceDialog} onOpenChange={onVoiceDialogChange}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Голосовой тренажер</DialogTitle>
@@ -201,7 +197,7 @@ export default function TrainerDialogs({
                 size="lg"
                 variant={isRecording ? 'destructive' : 'default'}
                 className="w-32 h-32 rounded-full"
-                onClick={isRecording ? handleStopRecording : handleStartRecording}
+                onClick={isRecording ? onStopRecording : onStartRecording}
               >
                 {isRecording ? (
                   <Icon name="Square" size={48} />
@@ -277,7 +273,7 @@ export default function TrainerDialogs({
             )}
 
             <div className="flex justify-end">
-              <Button onClick={handleNextVoiceStep} disabled={!voiceResponse || !voiceAnalysis}>
+              <Button onClick={onNextVoiceStep} disabled={!voiceResponse || !voiceAnalysis}>
                 {currentVoiceStep === mockVoiceSteps.length - 1 ? 'Завершить' : 'Следующий шаг'}
                 <Icon name="ArrowRight" size={16} className="ml-2" />
               </Button>
@@ -287,7 +283,7 @@ export default function TrainerDialogs({
       </Dialog>
 
       {/* Doctor Dialog */}
-      <Dialog open={doctorDialog} onOpenChange={setDoctorDialog}>
+      <Dialog open={doctorDialog} onOpenChange={onDoctorDialogChange}>
         <DialogContent className="max-w-4xl max-h-[80vh]">
           <DialogHeader>
             <DialogTitle>Тренажер общения с пациентом</DialogTitle>
@@ -298,7 +294,7 @@ export default function TrainerDialogs({
 
           {!conversationAnalysis ? (
             <>
-              <Tabs value={doctorScenario} onValueChange={(val) => handleChangeScenario(val as any)} className="w-full">
+              <Tabs value={doctorScenario} onValueChange={onDoctorScenarioChange} className="w-full">
                 <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="consultation">Консультация</TabsTrigger>
                   <TabsTrigger value="treatment">План лечения</TabsTrigger>
@@ -353,7 +349,7 @@ export default function TrainerDialogs({
                       <Button
                         size="icon"
                         variant={isDoctorRecording ? 'destructive' : 'outline'}
-                        onClick={isDoctorRecording ? handleStopDoctorRecording : handleStartDoctorRecording}
+                        onClick={isDoctorRecording ? onStopDoctorRecording : onStartDoctorRecording}
                         disabled={conversationAnalysis !== null}
                       >
                         <Icon name={isDoctorRecording ? 'Square' : 'Mic'} size={20} />
@@ -362,23 +358,23 @@ export default function TrainerDialogs({
                       <Input
                         placeholder={isDoctorRecording ? 'Говорите...' : 'Или введите текст...'}
                         value={doctorInput}
-                        onChange={(e) => setDoctorInput(e.target.value)}
+                        onChange={(e) => onDoctorInputChange(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
-                            handleSendDoctorMessage();
+                            onSendDoctorMessage();
                           }
                         }}
                         disabled={conversationAnalysis !== null || isDoctorRecording}
                       />
-                      <Button onClick={handleSendDoctorMessage} disabled={!doctorInput.trim() || isDoctorRecording}>
+                      <Button onClick={onSendDoctorMessage} disabled={!doctorInput.trim() || isDoctorRecording}>
                         <Icon name="Send" size={16} />
                       </Button>
                     </div>
                     
                     {doctorMessages.length >= 6 && (
                       <div className="flex justify-end">
-                        <Button onClick={handleFinishConversation} variant="outline" size="sm">
+                        <Button onClick={onEndDoctorConversation} variant="outline" size="sm">
                           <Icon name="CheckCircle" size={16} className="mr-2" />
                           Завершить и получить оценку
                         </Button>
@@ -478,10 +474,10 @@ export default function TrainerDialogs({
               )}
 
               <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={handleRestartConversation}>
+                <Button variant="outline" onClick={() => onDoctorDialogChange(false)}>
                   Попробовать снова
                 </Button>
-                <Button onClick={() => setDoctorDialog(false)}>
+                <Button onClick={() => onDoctorDialogChange(false)}>
                   Закрыть
                 </Button>
               </div>

@@ -423,11 +423,13 @@ export default function Index() {
         voiceResponse={voiceResponse}
         isRecording={isRecording}
         voiceAnalysis={voiceAnalysis}
+        voiceStream={voiceStream}
         doctorScenario={doctorScenario}
         doctorMessages={doctorMessages}
         doctorInput={doctorInput}
         conversationAnalysis={conversationAnalysis}
         isDoctorRecording={isDoctorRecording}
+        doctorVoiceStream={doctorVoiceStream}
         onQuizAnswer={handleQuizAnswer}
         onNextQuizQuestion={handleNextQuizQuestion}
         onPrevQuizQuestion={handlePrevQuizQuestion}
