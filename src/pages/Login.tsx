@@ -45,9 +45,9 @@ export default function Login() {
             Платформа обучения Команда мечты
           </p>
           <div className="mt-4 p-3 bg-brand/5 rounded-lg text-sm">
-            <p className="font-medium mb-1">Тестовый доступ:</p>
+            <p className="font-medium mb-1">Доступ администратора:</p>
             <p className="text-muted-foreground">
-              Логин: <span className="font-mono font-semibold">user</span><br/>
+              Логин: <span className="font-mono font-semibold">admin</span><br/>
               Пароль: <span className="font-mono font-semibold">admin123</span>
             </p>
           </div>
