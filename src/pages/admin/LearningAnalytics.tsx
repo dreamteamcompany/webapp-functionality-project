@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
 import { authService } from '@/lib/auth';
 import { LEARNING_API_URL } from '@/lib/learning';
 import { useToast } from '@/hooks/use-toast';
+
+import AnalyticsHeader from '@/components/analytics/AnalyticsHeader';
+import AnalyticsSummaryCards from '@/components/analytics/AnalyticsSummaryCards';
+import CourseAnalyticsTab from '@/components/analytics/CourseAnalyticsTab';
+import TrainerAnalyticsTab from '@/components/analytics/TrainerAnalyticsTab';
+import UserProgressTab from '@/components/analytics/UserProgressTab';
 
 interface UserProgress {
   user_id: number;
@@ -50,7 +50,6 @@ interface Department {
 }
 
 export default function LearningAnalytics() {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const [courseProgress, setCourseProgress] = useState<UserProgress[]>([]);
   const [trainerProgress, setTrainerProgress] = useState<UserProgress[]>([]);
@@ -223,73 +222,17 @@ export default function LearningAnalytics() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-                <Icon name="ArrowLeft" size={20} />
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold">Аналитика обучения</h1>
-                <p className="text-sm text-muted-foreground">Прогресс сотрудников и статистика</p>
-              </div>
-            </div>
-            <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Выберите отдел" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Все отделы</SelectItem>
-                {departments.map((dept) => (
-                  <SelectItem key={dept.id} value={dept.id.toString()}>
-                    {dept.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </header>
+      <AnalyticsHeader 
+        departments={departments}
+        selectedDepartment={selectedDepartment}
+        onDepartmentChange={setSelectedDepartment}
+      />
 
       <main className="container mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center">
-                <Icon name="BookOpen" size={24} className="text-blue-500" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">В процессе</p>
-                <p className="text-2xl font-bold">{totalInProgress}</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center">
-                <Icon name="CheckCircle" size={24} className="text-green-500" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Завершено</p>
-                <p className="text-2xl font-bold">{totalCompleted}</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-purple-500/10 rounded-lg flex items-center justify-center">
-                <Icon name="Users" size={24} className="text-purple-500" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Всего активностей</p>
-                <p className="text-2xl font-bold">{totalInProgress + totalCompleted}</p>
-              </div>
-            </div>
-          </Card>
-        </div>
+        <AnalyticsSummaryCards 
+          totalInProgress={totalInProgress}
+          totalCompleted={totalCompleted}
+        />
 
         <Tabs defaultValue="courses" className="space-y-6">
           <TabsList>
@@ -298,211 +241,28 @@ export default function LearningAnalytics() {
             <TabsTrigger value="users">По сотрудникам</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="courses" className="space-y-6">
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Статистика по курсам</h2>
-              <div className="space-y-4">
-                {courseStats.map((stat) => (
-                  <Card key={stat.course_id} className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h3 className="font-semibold text-lg">{stat.title}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {stat.total_users} сотрудников
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Badge variant="outline">{stat.in_progress} в процессе</Badge>
-                        <Badge className="bg-green-500">{stat.completed} завершено</Badge>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span>Средний прогресс</span>
-                        <span className="font-semibold">{stat.avg_progress}%</span>
-                      </div>
-                      <Progress value={stat.avg_progress} className="h-2" />
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Детальный прогресс по курсам</h2>
-              <Card className="overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-muted/50">
-                      <tr>
-                        <th className="text-left p-4 font-medium">Сотрудник</th>
-                        <th className="text-left p-4 font-medium">Отдел</th>
-                        <th className="text-left p-4 font-medium">Курс</th>
-                        <th className="text-left p-4 font-medium">Статус</th>
-                        <th className="text-left p-4 font-medium">Прогресс</th>
-                        <th className="text-left p-4 font-medium">Начат</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredCourseProgress.map((prog, idx) => (
-                        <tr key={idx} className="border-t">
-                          <td className="p-4">
-                            <div>
-                              <p className="font-medium">{prog.full_name}</p>
-                              <p className="text-sm text-muted-foreground">{prog.username}</p>
-                            </div>
-                          </td>
-                          <td className="p-4">{prog.department_name}</td>
-                          <td className="p-4">{prog.title}</td>
-                          <td className="p-4">
-                            <Badge className={getStatusColor(prog.status)}>{prog.status}</Badge>
-                          </td>
-                          <td className="p-4">
-                            <div className="flex items-center gap-2">
-                              <Progress value={prog.progress_percentage || 0} className="w-20 h-2" />
-                              <span className="text-sm">{prog.progress_percentage || 0}%</span>
-                            </div>
-                          </td>
-                          <td className="p-4 text-sm text-muted-foreground">
-                            {new Date(prog.started_at).toLocaleDateString('ru-RU')}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </Card>
-            </div>
+          <TabsContent value="courses">
+            <CourseAnalyticsTab 
+              courseStats={courseStats}
+              filteredCourseProgress={filteredCourseProgress}
+              getStatusColor={getStatusColor}
+            />
           </TabsContent>
 
-          <TabsContent value="trainers" className="space-y-6">
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Статистика по тренажерам</h2>
-              <div className="space-y-4">
-                {trainerStats.map((stat) => (
-                  <Card key={stat.trainer_id} className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h3 className="font-semibold text-lg">{stat.title}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {stat.total_users} сотрудников
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Badge variant="outline">{stat.in_progress} в процессе</Badge>
-                        <Badge className="bg-green-500">{stat.completed} завершено</Badge>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Icon name="Award" size={20} className="text-yellow-500" />
-                      <span className="text-sm">Средний результат: <strong>{stat.avg_score}%</strong></span>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Детальный прогресс по тренажерам</h2>
-              <Card className="overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-muted/50">
-                      <tr>
-                        <th className="text-left p-4 font-medium">Сотрудник</th>
-                        <th className="text-left p-4 font-medium">Отдел</th>
-                        <th className="text-left p-4 font-medium">Тренажер</th>
-                        <th className="text-left p-4 font-medium">Статус</th>
-                        <th className="text-left p-4 font-medium">Результат</th>
-                        <th className="text-left p-4 font-medium">Начат</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredTrainerProgress.map((prog, idx) => (
-                        <tr key={idx} className="border-t">
-                          <td className="p-4">
-                            <div>
-                              <p className="font-medium">{prog.full_name}</p>
-                              <p className="text-sm text-muted-foreground">{prog.username}</p>
-                            </div>
-                          </td>
-                          <td className="p-4">{prog.department_name}</td>
-                          <td className="p-4">{prog.title}</td>
-                          <td className="p-4">
-                            <Badge className={getStatusColor(prog.status)}>{prog.status}</Badge>
-                          </td>
-                          <td className="p-4">
-                            <div className="flex items-center gap-2">
-                              <Icon name="Award" size={16} className="text-yellow-500" />
-                              <span className="font-semibold">{prog.score || 0}%</span>
-                            </div>
-                          </td>
-                          <td className="p-4 text-sm text-muted-foreground">
-                            {new Date(prog.started_at).toLocaleDateString('ru-RU')}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </Card>
-            </div>
+          <TabsContent value="trainers">
+            <TrainerAnalyticsTab 
+              trainerStats={trainerStats}
+              filteredTrainerProgress={filteredTrainerProgress}
+              getStatusColor={getStatusColor}
+            />
           </TabsContent>
 
-          <TabsContent value="users" className="space-y-6">
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Активность сотрудников</h2>
-              <Card className="overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-muted/50">
-                      <tr>
-                        <th className="text-left p-4 font-medium">Сотрудник</th>
-                        <th className="text-left p-4 font-medium">Отдел</th>
-                        <th className="text-left p-4 font-medium">Курсов начато</th>
-                        <th className="text-left p-4 font-medium">Курсов завершено</th>
-                        <th className="text-left p-4 font-medium">Тренажеров начато</th>
-                        <th className="text-left p-4 font-medium">Тренажеров завершено</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {Array.from(new Set([
-                        ...filteredCourseProgress.map(p => p.user_id),
-                        ...filteredTrainerProgress.map(p => p.user_id)
-                      ])).map((userId) => {
-                        const userCourses = filteredCourseProgress.filter(p => p.user_id === userId);
-                        const userTrainers = filteredTrainerProgress.filter(p => p.user_id === userId);
-                        const user = userCourses[0] || userTrainers[0];
-
-                        return (
-                          <tr key={userId} className="border-t">
-                            <td className="p-4">
-                              <div>
-                                <p className="font-medium">{user.full_name}</p>
-                                <p className="text-sm text-muted-foreground">{user.username}</p>
-                              </div>
-                            </td>
-                            <td className="p-4">{user.department_name}</td>
-                            <td className="p-4">{userCourses.length}</td>
-                            <td className="p-4">
-                              <Badge className="bg-green-500">
-                                {userCourses.filter(c => c.status === 'Завершен').length}
-                              </Badge>
-                            </td>
-                            <td className="p-4">{userTrainers.length}</td>
-                            <td className="p-4">
-                              <Badge className="bg-green-500">
-                                {userTrainers.filter(t => t.status === 'Завершен').length}
-                              </Badge>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </Card>
-            </div>
+          <TabsContent value="users">
+            <UserProgressTab 
+              filteredCourseProgress={filteredCourseProgress}
+              filteredTrainerProgress={filteredTrainerProgress}
+              getStatusColor={getStatusColor}
+            />
           </TabsContent>
         </Tabs>
       </main>
