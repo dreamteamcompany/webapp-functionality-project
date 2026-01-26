@@ -116,7 +116,7 @@ export default function CustomDoctorDialog({ scenario, open, onClose }: CustomDo
           <div className="h-full flex flex-col">
             <DialogHeader className="p-6 border-b">
               <DialogTitle className="text-2xl">Анализ разговора</DialogTitle>
-              <DialogDescription>Результаты вашей практики</DialogDescription>
+              <DialogDescription>Подробные результаты вашей практики с AI-пациентом</DialogDescription>
             </DialogHeader>
 
             <ScrollArea className="flex-1 p-6">

@@ -362,12 +362,12 @@ export default function TrainerDialogs({
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
-                            onSendDoctorMessage();
+                            onSendDoctorMessage(doctorInput);
                           }
                         }}
                         disabled={conversationAnalysis !== null || isDoctorRecording}
                       />
-                      <Button onClick={onSendDoctorMessage} disabled={!doctorInput.trim() || isDoctorRecording}>
+                      <Button onClick={() => onSendDoctorMessage(doctorInput)} disabled={!doctorInput.trim() || isDoctorRecording}>
                         <Icon name="Send" size={16} />
                       </Button>
                     </div>
