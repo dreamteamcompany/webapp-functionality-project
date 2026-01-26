@@ -1,4 +1,4 @@
-const API_URL = 'https://functions.poehali.dev/6ea6ed72-8e1a-48a2-90c8-589a4810e873';
+const API_URL = 'https://functions.poehali.dev/a52cc573-5d44-4c52-bc3e-e509d0be5219';
 
 export interface User {
   id: number;
