@@ -1,4 +1,12 @@
+import os
 import json
+import psycopg2
+import bcrypt
+import secrets
+from datetime import datetime, timedelta
+
+DATABASE_URL = os.environ.get('DATABASE_URL', '')
+SEARCH_PATH = 't_p66738329_webapp_functionality'
 
 CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
@@ -7,11 +15,13 @@ CORS_HEADERS = {
     'Content-Type': 'application/json'
 }
 
+def get_db_connection():
+    return psycopg2.connect(DATABASE_URL)
+
 def handler(event, context):
-    """Временный API endpoint для авторизации"""
+    """API для авторизации с поддержкой БД"""
     method = event.get('httpMethod', 'GET')
     
-    # Handle CORS preflight
     if method == 'OPTIONS':
         return {
             'statusCode': 200,
@@ -20,27 +30,97 @@ def handler(event, context):
             'isBase64Encoded': False
         }
     
-    # Simple login response
     if method == 'POST':
-        return {
-            'statusCode': 200,
-            'headers': CORS_HEADERS,
-            'body': json.dumps({
-                'session_token': 'test-session-token-123',
-                'user': {
-                    'id': 1,
-                    'username': 'admin',
-                    'email': 'admin@example.com',
-                    'full_name': 'Administrator',
-                    'role_id': 1
+        try:
+            body_str = event.get('body') or '{}'
+            body = json.loads(body_str) if body_str else {}
+            username = body.get('username', '')
+            password = body.get('password', '')
+            
+            if not username or not password:
+                return {
+                    'statusCode': 400,
+                    'headers': CORS_HEADERS,
+                    'body': json.dumps({'error': 'Логин и пароль обязательны'}),
+                    'isBase64Encoded': False
                 }
-            }),
-            'isBase64Encoded': False
-        }
+            
+            conn = get_db_connection()
+            try:
+                with conn.cursor() as cur:
+                    cur.execute(f"""
+                        SELECT id, password_hash, full_name, email, role_id, is_blocked
+                        FROM {SEARCH_PATH}.users
+                        WHERE username = '{username}'
+                    """)
+                    user = cur.fetchone()
+                    
+                    if not user:
+                        return {
+                            'statusCode': 401,
+                            'headers': CORS_HEADERS,
+                            'body': json.dumps({'error': 'Неверный логин или пароль'}),
+                            'isBase64Encoded': False
+                        }
+                    
+                    user_id, password_hash, full_name, email, role_id, is_blocked = user
+                    
+                    if is_blocked:
+                        return {
+                            'statusCode': 403,
+                            'headers': CORS_HEADERS,
+                            'body': json.dumps({'error': 'Пользователь заблокирован'}),
+                            'isBase64Encoded': False
+                        }
+                    
+                    if not bcrypt.checkpw(password.encode('utf-8'), password_hash.encode('utf-8')):
+                        return {
+                            'statusCode': 401,
+                            'headers': CORS_HEADERS,
+                            'body': json.dumps({'error': 'Неверный логин или пароль'}),
+                            'isBase64Encoded': False
+                        }
+                    
+                    session_token = secrets.token_urlsafe(32)
+                    expires_at = datetime.now() + timedelta(days=7)
+                    
+                    cur.execute(f"""
+                        INSERT INTO {SEARCH_PATH}.user_sessions (user_id, session_token, expires_at, ip_address)
+                        VALUES ({user_id}, '{session_token}', '{expires_at}', '0.0.0.0')
+                    """)
+                    
+                    cur.execute(f"UPDATE {SEARCH_PATH}.users SET last_login = NOW() WHERE id = {user_id}")
+                    conn.commit()
+                    
+                    return {
+                        'statusCode': 200,
+                        'headers': CORS_HEADERS,
+                        'body': json.dumps({
+                            'session_token': session_token,
+                            'user': {
+                                'id': user_id,
+                                'username': username,
+                                'full_name': full_name,
+                                'email': email,
+                                'role_id': role_id
+                            }
+                        }),
+                        'isBase64Encoded': False
+                    }
+            finally:
+                conn.close()
+                
+        except Exception as e:
+            return {
+                'statusCode': 500,
+                'headers': CORS_HEADERS,
+                'body': json.dumps({'error': f'Ошибка сервера: {str(e)}'}),
+                'isBase64Encoded': False
+            }
     
     return {
         'statusCode': 405,
         'headers': CORS_HEADERS,
-        'body': json.dumps({'error': 'Method not allowed'}),
+        'body': json.dumps({'error': 'Метод не поддерживается'}),
         'isBase64Encoded': False
     }

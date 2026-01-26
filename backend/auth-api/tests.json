@@ -10,9 +10,16 @@
       "name": "Login test",
       "method": "POST",
       "path": "/",
+      "body": {
+        "username": "user",
+        "password": "admin123"
+      },
       "expectedStatus": 200,
       "expectedBody": {
-        "session_token": "string"
+        "session_token": "string",
+        "user": {
+          "username": "user"
+        }
       },
       "bodyMatcher": "partial"
     }

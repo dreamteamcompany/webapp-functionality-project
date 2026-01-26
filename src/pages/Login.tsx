@@ -44,6 +44,13 @@ export default function Login() {
           <p className="text-muted-foreground">
             Платформа обучения Команда мечты
           </p>
+          <div className="mt-4 p-3 bg-brand/5 rounded-lg text-sm">
+            <p className="font-medium mb-1">Тестовый доступ:</p>
+            <p className="text-muted-foreground">
+              Логин: <span className="font-mono font-semibold">user</span><br/>
+              Пароль: <span className="font-mono font-semibold">admin123</span>
+            </p>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
