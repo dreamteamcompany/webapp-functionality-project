@@ -143,6 +143,38 @@ export class AdvancedPatientAI {
       'Спасибо, мне правда полегчало.',
       'Хорошо, что вы так подробно объяснили.'
     ]);
+
+    this.responseVariations.set('alternatives', [
+      'А есть какие-то альтернативы?',
+      'Может, есть другие варианты?',
+      'Расскажите про другие методы.',
+      'А если попробовать что-то ещё?',
+      'Какие ещё есть возможности?'
+    ]);
+
+    this.responseVariations.set('experience', [
+      'А у вас большой опыт таких процедур?',
+      'Вы часто это делаете?',
+      'Как часто у вас бывают такие случаи?',
+      'У вас много пациентов с такой проблемой?',
+      'Вы давно этим занимаетесь?'
+    ]);
+
+    this.responseVariations.set('results', [
+      'А какой будет результат?',
+      'Что я получу в итоге?',
+      'Насколько это эффективно?',
+      'А помогает ли это всем?',
+      'Какие шансы на успех?'
+    ]);
+
+    this.responseVariations.set('side_effects', [
+      'А какие могут быть побочные эффекты?',
+      'Есть ли какие-то риски?',
+      'Что может пойти не так?',
+      'Расскажите о возможных осложнениях.',
+      'А безопасно ли это?'
+    ]);
   }
 
   getScenario(): CustomScenario {
@@ -150,7 +182,17 @@ export class AdvancedPatientAI {
   }
 
   getGreeting(): string {
-    return this.scenario.initialMessage;
+    const baseGreeting = this.scenario.initialMessage;
+    const followUpQuestions = [
+      'Что вы можете мне посоветовать?',
+      'Как мне быть?',
+      'Скажите, что мне делать?',
+      'Вы можете мне помочь?',
+      'Что вы думаете об этом?'
+    ];
+    
+    const followUp = followUpQuestions[Math.floor(Math.random() * followUpQuestions.length)];
+    return `${baseGreeting} ${followUp}`;
   }
 
   async getResponse(userMessage: string): Promise<AIResponse> {
@@ -252,6 +294,7 @@ export class AdvancedPatientAI {
 
   private generateNaturalResponse(userMessage: string, analysis: any): string {
     const parts: string[] = [];
+    const messageCount = this.conversationHistory.length;
 
     if (analysis.hasEmpathy && this.currentSatisfaction < 70) {
       const empathyResponse = this.getRandomUnusedPhrase(
@@ -261,23 +304,6 @@ export class AdvancedPatientAI {
       );
       parts.push(empathyResponse);
       this.context.empathyShown++;
-    }
-
-    if (analysis.isTechnical && this.scenario.aiPersonality.knowledge === 'low') {
-      parts.push(this.getRandomUnusedPhrase('confusion'));
-      return parts.join(' ');
-    }
-
-    if (analysis.intent === 'ask_treatment') {
-      parts.push(this.generateTreatmentQuestion());
-    } else if (analysis.intent === 'ask_pain') {
-      parts.push(this.generatePainConcern());
-    } else if (analysis.intent === 'ask_cost') {
-      parts.push(this.generateCostQuestion());
-    } else if (analysis.intent === 'ask_time') {
-      parts.push(this.generateTimeQuestion());
-    } else if (analysis.hasQuestion) {
-      parts.push(this.generateContextualQuestion(analysis));
     } else if (analysis.sentiment === 'positive') {
       if (Math.random() > 0.5) {
         parts.push(this.getRandomUnusedPhrase('agreement'));
@@ -286,19 +312,90 @@ export class AdvancedPatientAI {
       }
     }
 
-    if (parts.length === 0) {
+    if (analysis.isTechnical && this.scenario.aiPersonality.knowledge === 'low') {
+      parts.push(this.getRandomUnusedPhrase('confusion'));
+    }
+
+    if (messageCount > 10 && this.currentSatisfaction > 70) {
+      parts.push(this.getRandomUnusedPhrase('gratitude'));
+      return parts.join(' ').trim();
+    }
+
+    const shouldAskQuestion = messageCount <= 2 || Math.random() > 0.3;
+    
+    if (shouldAskQuestion) {
+      const questionType = this.selectQuestionType(analysis);
+      parts.push(this.generateQuestionByType(questionType));
+    } else if (this.currentSatisfaction < 40) {
+      parts.push(this.generateDissatisfactionPhrase());
+    } else if (parts.length === 0) {
       parts.push(this.generateContextBasedResponse(analysis));
     }
 
-    if (this.conversationHistory.length > 6 && Math.random() > 0.6) {
-      if (this.currentSatisfaction > 70) {
-        parts.push(this.getRandomUnusedPhrase('gratitude'));
-      } else if (this.currentSatisfaction < 40) {
-        parts.push(this.generateDissatisfactionPhrase());
-      }
+    return parts.join(' ').trim();
+  }
+
+  private selectQuestionType(analysis: any): string {
+    const messageCount = this.conversationHistory.length;
+    const topicsDiscussed = Array.from(this.context.topicsDiscussed);
+
+    if (messageCount <= 2) {
+      const initialQuestions = ['treatment', 'pain', 'how', 'concern'];
+      return initialQuestions[Math.floor(Math.random() * initialQuestions.length)];
     }
 
-    return parts.join(' ').trim();
+    const weights: Record<string, number> = {
+      treatment: topicsDiscussed.includes('treatment') ? 0.05 : 0.2,
+      pain: topicsDiscussed.includes('pain') ? 0.05 : 0.15,
+      cost: topicsDiscussed.includes('cost') ? 0.03 : 0.12,
+      time: topicsDiscussed.includes('time') ? 0.03 : 0.12,
+      how: 0.1,
+      why: 0.1,
+      concern: this.currentSatisfaction < 60 ? 0.15 : 0.08,
+      alternatives: 0.08,
+      experience: 0.06,
+      results: 0.1,
+      side_effects: this.currentEmotionalState === 'scared' ? 0.15 : 0.08
+    };
+
+    const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0);
+    let random = Math.random() * totalWeight;
+
+    for (const [type, weight] of Object.entries(weights)) {
+      random -= weight;
+      if (random <= 0) return type;
+    }
+
+    return 'how';
+  }
+
+  private generateQuestionByType(type: string): string {
+    switch (type) {
+      case 'treatment':
+        return this.generateTreatmentQuestion();
+      case 'pain':
+        return this.generatePainConcern();
+      case 'cost':
+        return this.generateCostQuestion();
+      case 'time':
+        return this.generateTimeQuestion();
+      case 'how':
+        return this.getRandomUnusedPhrase('question_how');
+      case 'why':
+        return this.getRandomUnusedPhrase('question_why');
+      case 'concern':
+        return this.getRandomUnusedPhrase('concern');
+      case 'alternatives':
+        return this.getRandomUnusedPhrase('alternatives');
+      case 'experience':
+        return this.getRandomUnusedPhrase('experience');
+      case 'results':
+        return this.getRandomUnusedPhrase('results');
+      case 'side_effects':
+        return this.getRandomUnusedPhrase('side_effects');
+      default:
+        return this.generateTreatmentQuestion();
+    }
   }
 
   private generateTreatmentQuestion(): string {
