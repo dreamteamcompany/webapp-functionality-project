@@ -16,6 +16,7 @@ interface DashboardContentProps {
   onStartTraining: (type: 'quiz' | 'voice' | 'doctor') => void;
   onOpenSimulator: () => void;
   onOpenSalesBattle: () => void;
+  onOpenCustomScenarios?: () => void;
   getStatusBadge: (status: Course['status']) => { variant: 'secondary' | 'default' | 'outline'; text: string };
 }
 
@@ -29,6 +30,7 @@ export default function DashboardContent({
   onStartTraining,
   onOpenSimulator,
   onOpenSalesBattle,
+  onOpenCustomScenarios,
   getStatusBadge,
 }: DashboardContentProps) {
   const categories = Array.from(new Set(courses.map(c => c.category)));
@@ -163,6 +165,21 @@ export default function DashboardContent({
                 <div className="text-xs text-muted-foreground">Практика общения с AI</div>
               </div>
             </Button>
+
+            {onOpenCustomScenarios && (
+              <Button
+                variant="outline"
+                className="w-full justify-start border-primary/50"
+                onClick={onOpenCustomScenarios}
+              >
+                <Icon name="Layers" size={20} className="mr-3 text-primary" />
+                <div className="flex-1 text-left">
+                  <div className="font-medium text-primary">Мои сценарии</div>
+                  <div className="text-xs text-muted-foreground">Создайте собственного ИИ-пациента</div>
+                </div>
+                <Icon name="ChevronRight" size={16} className="text-primary" />
+              </Button>
+            )}
 
             <Button
               variant="outline"

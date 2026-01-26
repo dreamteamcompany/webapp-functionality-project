@@ -16,7 +16,13 @@ import SalesBattle from '@/components/games/SalesBattle';
 import DashboardHeader from './Index/DashboardHeader';
 import DashboardContent from './Index/DashboardContent';
 import KnowledgeBase from './Index/KnowledgeBase';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import Icon from '@/components/ui/icon';
+import { CustomScenario } from '@/types/customScenario';
+import { ScenarioStorage } from '@/lib/scenarioStorage';
+import ScenarioList from '@/components/custom-scenarios/ScenarioList';
+import ScenarioEditor from '@/components/custom-scenarios/ScenarioEditor';
+import CustomDoctorDialog from '@/components/custom-scenarios/CustomDoctorDialog';
 
 export default function Index() {
   const navigate = useNavigate();
@@ -64,6 +70,12 @@ export default function Index() {
   const [newArticleContent, setNewArticleContent] = useState('');
   const [knowledgeSearchQuery, setKnowledgeSearchQuery] = useState('');
   const [selectedKnowledgeTag, setSelectedKnowledgeTag] = useState<string | null>(null);
+
+  const [customScenariosDialog, setCustomScenariosDialog] = useState(false);
+  const [customScenarioEditorDialog, setCustomScenarioEditorDialog] = useState(false);
+  const [selectedCustomScenario, setSelectedCustomScenario] = useState<any>(null);
+  const [customDoctorDialog, setCustomDoctorDialog] = useState(false);
+  const [playingCustomScenario, setPlayingCustomScenario] = useState<any>(null);
 
   const handleLogout = async () => {
     await authService.logout();
@@ -329,6 +341,41 @@ export default function Index() {
     });
   };
 
+  const handleOpenCustomScenarios = () => {
+    setCustomScenariosDialog(true);
+  };
+
+  const handleCreateCustomScenario = () => {
+    setSelectedCustomScenario(null);
+    setCustomScenarioEditorDialog(true);
+  };
+
+  const handleEditCustomScenario = (scenario: CustomScenario) => {
+    setSelectedCustomScenario(scenario);
+    setCustomScenarioEditorDialog(true);
+  };
+
+  const handleSaveCustomScenario = (scenario: CustomScenario) => {
+    ScenarioStorage.save(scenario);
+    setCustomScenarioEditorDialog(false);
+    setSelectedCustomScenario(null);
+    toast({
+      title: 'Сценарий сохранён',
+      description: `Сценарий "${scenario.name}" успешно сохранён`,
+    });
+  };
+
+  const handlePlayCustomScenario = (scenario: CustomScenario) => {
+    setPlayingCustomScenario(scenario);
+    setCustomScenariosDialog(false);
+    setCustomDoctorDialog(true);
+  };
+
+  const handleCloseCustomDoctor = () => {
+    setCustomDoctorDialog(false);
+    setPlayingCustomScenario(null);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader
@@ -357,6 +404,7 @@ export default function Index() {
               onStartTraining={handleStartTraining}
               onOpenSimulator={() => setSimulatorDialog(true)}
               onOpenSalesBattle={() => setSalesBattleDialog(true)}
+              onOpenCustomScenarios={handleOpenCustomScenarios}
               getStatusBadge={getStatusBadge}
             />
           </TabsContent>
@@ -455,6 +503,53 @@ export default function Index() {
           <SalesBattle />
         </DialogContent>
       </Dialog>
+
+      <Dialog open={customScenariosDialog} onOpenChange={setCustomScenariosDialog}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3 text-2xl">
+              <Icon name="Layers" size={28} className="text-primary" />
+              Конструктор сценариев
+            </DialogTitle>
+            <DialogDescription>
+              Создавайте собственных ИИ-пациентов для практики
+            </DialogDescription>
+          </DialogHeader>
+          <ScenarioList
+            onEdit={handleEditCustomScenario}
+            onPlay={handlePlayCustomScenario}
+            onCreateNew={handleCreateCustomScenario}
+            onRefresh={() => {}}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={customScenarioEditorDialog} onOpenChange={setCustomScenarioEditorDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedCustomScenario ? 'Редактировать сценарий' : 'Создать новый сценарий'}
+            </DialogTitle>
+            <DialogDescription>
+              Настройте контекст, характер и поведение ИИ-пациента
+            </DialogDescription>
+          </DialogHeader>
+          <ScenarioEditor
+            scenario={selectedCustomScenario}
+            onSave={handleSaveCustomScenario}
+            onCancel={() => {
+              setCustomScenarioEditorDialog(false);
+              setSelectedCustomScenario(null);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <CustomDoctorDialog
+        scenario={playingCustomScenario}
+        open={customDoctorDialog}
+        onClose={handleCloseCustomDoctor}
+      />
     </div>
   );
 }
