@@ -186,6 +186,16 @@ export class PatientAI {
     this.consecutiveNonsense = 0;
   }
 
+  getGreeting(): string {
+    const greetings: Record<string, string> = {
+      consultation: `Здравствуйте, доктор. ${this.profile.complaint}. Мне очень нужна ваша помощь.`,
+      treatment: `Доктор, мне сказали, что ${this.profile.complaint.toLowerCase()}. Я переживаю...`,
+      emergency: `Доктор! ${this.profile.complaint} Что мне делать?!`,
+      objections: `Здравствуйте. ${this.profile.complaint}. Но у меня есть сомнения...`
+    };
+    return greetings[this.profile.scenario] || this.profile.complaint;
+  }
+
   private createProfile(scenario: string): PatientProfile {
     const profiles: Record<string, PatientProfile> = {
       consultation: {

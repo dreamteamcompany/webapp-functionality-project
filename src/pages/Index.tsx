@@ -208,11 +208,7 @@ export default function Index() {
     setDoctorInput('');
     setConversationAnalysis(null);
     
-    if (!patientAIRef.current) {
-      patientAIRef.current = new PatientAI();
-    }
-    
-    patientAIRef.current.startConversation(scenario);
+    patientAIRef.current = new PatientAI(scenario);
     const greeting = patientAIRef.current.getGreeting();
     setDoctorMessages([{ role: 'patient', content: greeting }]);
     
@@ -227,13 +223,10 @@ export default function Index() {
 
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    const response = patientAIRef.current.getResponse(message);
-    setDoctorMessages(prev => [...prev, { role: 'patient', content: response }]);
+    const response = patientAIRef.current.generateResponse(message);
+    setDoctorMessages(prev => [...prev, { role: 'patient', content: response.message }]);
 
-    const analysis = patientAIRef.current.analyzeConversation([
-      ...doctorMessages,
-      { role: 'admin', content: message }
-    ]);
+    const analysis = patientAIRef.current.analyzeConversation();
     setConversationAnalysis(analysis);
   };
 
