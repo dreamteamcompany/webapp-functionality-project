@@ -5,7 +5,7 @@ import Icon from '@/components/ui/icon';
 import PatientAI from '@/lib/patientAI';
 
 interface LearningStatsProps {
-  stats: {
+  stats?: {
     totalObjections: number;
     totalSuccessful: number;
     totalUnsuccessful: number;
@@ -15,6 +15,16 @@ interface LearningStatsProps {
 }
 
 export default function LearningStats({ stats }: LearningStatsProps) {
+  // Default values if stats not provided
+  const defaultStats = {
+    totalObjections: 0,
+    totalSuccessful: 0,
+    totalUnsuccessful: 0,
+    mostLearnedObjection: '',
+    maxLearningCount: 0,
+  };
+  
+  const actualStats = stats || defaultStats;
   const handleResetLearning = () => {
     if (confirm('Вы уверены, что хотите сбросить все данные обучения ИИ? Это действие необратимо.')) {
       PatientAI.resetLearning();
@@ -22,12 +32,12 @@ export default function LearningStats({ stats }: LearningStatsProps) {
     }
   };
 
-  const successRate = stats.totalSuccessful + stats.totalUnsuccessful > 0
-    ? Math.round((stats.totalSuccessful / (stats.totalSuccessful + stats.totalUnsuccessful)) * 100)
+  const successRate = actualStats.totalSuccessful + actualStats.totalUnsuccessful > 0
+    ? Math.round((actualStats.totalSuccessful / (actualStats.totalSuccessful + actualStats.totalUnsuccessful)) * 100)
     : 0;
 
   const getLevelInfo = () => {
-    const total = stats.totalSuccessful + stats.totalUnsuccessful;
+    const total = actualStats.totalSuccessful + actualStats.totalUnsuccessful;
     if (total === 0) return { level: 'Новичок', color: 'text-gray-600', icon: 'UserCircle' as const };
     if (total < 10) return { level: 'Ученик', color: 'text-blue-600', icon: 'GraduationCap' as const };
     if (total < 30) return { level: 'Практикант', color: 'text-green-600', icon: 'BookOpen' as const };
@@ -36,7 +46,7 @@ export default function LearningStats({ stats }: LearningStatsProps) {
   };
 
   const levelInfo = getLevelInfo();
-  const totalInteractions = stats.totalSuccessful + stats.totalUnsuccessful;
+  const totalInteractions = actualStats.totalSuccessful + actualStats.totalUnsuccessful;
 
   return (
     <Card className="p-6 space-y-4 border-2 border-purple-500/20 bg-gradient-to-br from-purple-50/50 to-pink-50/50 dark:from-purple-950/20 dark:to-pink-950/20">
@@ -62,17 +72,17 @@ export default function LearningStats({ stats }: LearningStatsProps) {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="space-y-1">
-          <div className="text-2xl font-bold text-primary">{stats.totalObjections}</div>
+          <div className="text-2xl font-bold text-primary">{actualStats.totalObjections}</div>
           <div className="text-xs text-muted-foreground">Изучено возражений</div>
         </div>
         
         <div className="space-y-1">
-          <div className="text-2xl font-bold text-green-600">{stats.totalSuccessful}</div>
+          <div className="text-2xl font-bold text-green-600">{actualStats.totalSuccessful}</div>
           <div className="text-xs text-muted-foreground">Успешных ответов</div>
         </div>
         
         <div className="space-y-1">
-          <div className="text-2xl font-bold text-red-600">{stats.totalUnsuccessful}</div>
+          <div className="text-2xl font-bold text-red-600">{actualStats.totalUnsuccessful}</div>
           <div className="text-xs text-muted-foreground">Неудачных ответов</div>
         </div>
         
@@ -82,7 +92,7 @@ export default function LearningStats({ stats }: LearningStatsProps) {
         </div>
       </div>
 
-      {stats.mostLearnedObjection && (
+      {actualStats.mostLearnedObjection && (
         <div className="pt-4 border-t">
           <div className="flex items-center gap-2 mb-2">
             <Icon name="TrendingUp" size={16} className="text-muted-foreground" />
@@ -90,10 +100,10 @@ export default function LearningStats({ stats }: LearningStatsProps) {
           </div>
           <div className="flex items-center justify-between">
             <Badge variant="secondary" className="text-sm">
-              {stats.mostLearnedObjection}
+              {actualStats.mostLearnedObjection}
             </Badge>
             <span className="text-sm text-muted-foreground">
-              {stats.maxLearningCount} успешных ответов
+              {actualStats.maxLearningCount} успешных ответов
             </span>
           </div>
         </div>
