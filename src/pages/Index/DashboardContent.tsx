@@ -154,18 +154,6 @@ export default function DashboardContent({
               </div>
             </Button>
 
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={() => onStartTraining('doctor')}
-            >
-              <Icon name="Stethoscope" size={20} className="mr-3" />
-              <div className="flex-1 text-left">
-                <div className="font-medium">Виртуальный врач</div>
-                <div className="text-xs text-muted-foreground">Практика общения с AI</div>
-              </div>
-            </Button>
-
             {onOpenCustomScenarios && (
               <Button
                 variant="outline"
