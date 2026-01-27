@@ -481,13 +481,6 @@ export default function AdminSimulatorDialog({ open, onOpenChange }: AdminSimula
         open={showAchievements}
         onClose={() => setShowAchievements(false)}
       />
-
-      {/* Глубокий анализ */}
-      <DeepAnalysisModal
-        open={showDeepAnalysis}
-        onClose={() => setShowDeepAnalysis(false)}
-        analysis={deepAnalysisData}
-      />
     </Dialog>
   );
 }
