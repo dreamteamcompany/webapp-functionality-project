@@ -14,9 +14,9 @@ export interface ConversationAnalysis {
   recommendations: string[];
   goodPoints: string[];
   missedOpportunities: string[];
-  patientBehaviorModel: PatientBehaviorModel;
-  conversationScenarios: ConversationScenario[];
-  deepInsights: DeepInsight[];
+  patientBehaviorModel?: PatientBehaviorModel;
+  conversationScenarios?: ConversationScenario[];
+  deepInsights?: DeepInsight[];
 }
 
 export interface PatientBehaviorModel {
@@ -638,7 +638,7 @@ export class AdvancedPatientAI {
     }
 
     // Если администратор спросил про опасения
-    if (analysis.intent === 'ask_concerns' || userMessage => userMessage.includes('волнует')) {
+    if (analysis.intent === 'ask_concerns') {
       const concerns = this.scenario.aiPersonality.concerns.slice(0, 2);
       return `Больше всего меня волнует ${concerns.join(' и ')}. Вы можете помочь с этим?`;
     }
@@ -1126,103 +1126,6 @@ export class AdvancedPatientAI {
         change
       );
     }
-  }
-
-  analyzeConversation(): ConversationAnalysis {
-    const { objectives = [], context } = this.scenario;
-    
-    let alignmentScore = 0;
-    const communicationScore = this.currentSatisfaction;
-    let goalProgressScore = 0;
-
-    const userMessages = this.conversationHistory.filter(m => m.role === 'user');
-    
-    if (context.goal) {
-      const goalKeywords = context.goal.toLowerCase().split(' ').filter(w => w.length > 3);
-      const mentioned = userMessages.some(m => 
-        goalKeywords.some(kw => m.content.toLowerCase().includes(kw))
-      );
-      alignmentScore += mentioned ? 50 : 0;
-    }
-
-    if (objectives.length > 0) {
-      const metObjectives = objectives.filter(obj => {
-        const objKeywords = obj.toLowerCase().split(' ').filter(w => w.length > 3);
-        return userMessages.some(m => 
-          objKeywords.some(kw => m.content.toLowerCase().includes(kw))
-        );
-      });
-      goalProgressScore = (metObjectives.length / objectives.length) * 100;
-    } else {
-      goalProgressScore = Math.min(this.conversationHistory.length * 10, 100);
-    }
-
-    if (this.context.empathyShown > 0) alignmentScore += 30;
-    if (this.context.clarityLevel > 2) alignmentScore += 20;
-
-    const recommendations: string[] = [];
-    const goodPoints: string[] = [];
-    const missedOpportunities: string[] = [];
-
-    if (this.currentSatisfaction >= 70) {
-      goodPoints.push('Успешно установлен контакт с пациентом');
-    } else if (this.currentSatisfaction < 40) {
-      recommendations.push('Проявляйте больше эмпатии и внимания к пациенту');
-      missedOpportunities.push('Недостаточно внимания к эмоциям пациента');
-    }
-
-    if (this.context.empathyShown >= 2) {
-      goodPoints.push('Проявили эмпатию и понимание');
-    } else if (this.context.empathyShown === 0) {
-      recommendations.push('Используйте фразы "Я понимаю ваши переживания", "Не волнуйтесь"');
-      missedOpportunities.push('Не проявили эмпатию');
-    }
-
-    if (this.context.clarityLevel >= 3) {
-      goodPoints.push('Объясняли простым языком');
-    } else if (this.context.clarityLevel <= 0) {
-      recommendations.push('Избегайте медицинских терминов, объясняйте проще');
-      missedOpportunities.push('Использовали сложную терминологию');
-    }
-
-    if (this.conversationHistory.length >= 7) {
-      goodPoints.push(`Провели подробную беседу (${this.conversationHistory.length / 2} сообщений)`);
-    } else if (this.conversationHistory.length < 4) {
-      recommendations.push('Продлите разговор, задайте больше вопросов');
-    }
-
-    if (goalProgressScore < 50) {
-      missedOpportunities.push(`Цель "${context.goal}" не достигнута`);
-      recommendations.push('Направьте беседу к достижению основной цели');
-    } else if (goalProgressScore >= 80) {
-      goodPoints.push('Отлично! Цель разговора достигнута');
-    }
-
-    const emotionalProgress = this.context.emotionalJourney;
-    if (emotionalProgress.length > 1) {
-      const improved = 
-        (emotionalProgress[0] === 'scared' && emotionalProgress[emotionalProgress.length - 1] === 'calm') ||
-        (emotionalProgress[0] === 'nervous' && emotionalProgress[emotionalProgress.length - 1] === 'calm') ||
-        (emotionalProgress[0] === 'angry' && emotionalProgress[emotionalProgress.length - 1] !== 'angry');
-      
-      if (improved) {
-        goodPoints.push('Успешно улучшили эмоциональное состояние пациента');
-      }
-    }
-
-    const overallScore = Math.round(
-      (alignmentScore * 0.3 + communicationScore * 0.4 + goalProgressScore * 0.3)
-    );
-
-    return {
-      alignmentScore: Math.round(alignmentScore),
-      communicationScore: Math.round(communicationScore),
-      goalProgressScore: Math.round(goalProgressScore),
-      overallScore,
-      recommendations,
-      goodPoints,
-      missedOpportunities
-    };
   }
 
   getConversationHistory() {
