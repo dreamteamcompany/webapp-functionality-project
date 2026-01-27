@@ -354,6 +354,22 @@ export class AdvancedPatientAI {
     const parts: string[] = [];
     const messageCount = this.conversationHistory.length;
 
+    // Проверка на бессмысленный ответ
+    if (this.isNonsenseMessage(userMessage)) {
+      return this.generateNonsenseReaction();
+    }
+
+    // Проверка на слишком короткий ответ
+    if (userMessage.trim().length < 10 && messageCount > 1) {
+      return this.generateShortAnswerReaction();
+    }
+
+    // Быстрое и качественное решение
+    if (messageCount <= 4 && this.currentSatisfaction >= 75 && analysis.hasEmpathy) {
+      return this.generateQuickSuccessReaction();
+    }
+
+    // Эмпатия - всегда ценится
     if (analysis.hasEmpathy && this.currentSatisfaction < 70) {
       const empathyResponse = this.getRandomUnusedPhrase(
         this.currentEmotionalState === 'scared' || this.currentEmotionalState === 'nervous'
@@ -370,12 +386,22 @@ export class AdvancedPatientAI {
       }
     }
 
+    // Реакция на сложную терминологию
     if (analysis.isTechnical && this.scenario.aiPersonality.knowledge === 'low') {
       parts.push(this.getRandomUnusedPhrase('confusion'));
     }
 
-    if (messageCount > 10 && this.currentSatisfaction > 70) {
+    // Раздражение при длительном неэффективном диалоге
+    if (messageCount > 8 && this.currentSatisfaction < 40) {
+      return this.generateFrustrationReaction();
+    }
+
+    // Благодарность при успешном решении
+    if (messageCount > 4 && this.currentSatisfaction > 75) {
       parts.push(this.getRandomUnusedPhrase('gratitude'));
+      if (messageCount > 6) {
+        return parts.join(' ') + ' ' + this.generateReadyToBookResponse();
+      }
       return parts.join(' ').trim();
     }
 
@@ -391,6 +417,110 @@ export class AdvancedPatientAI {
     }
 
     return parts.join(' ').trim();
+  }
+
+  private isNonsenseMessage(message: string): boolean {
+    const trimmed = message.trim().toLowerCase();
+    
+    // Слишком короткое
+    if (trimmed.length < 3) return true;
+
+    // Только цифры или символы
+    if (/^[0-9\s\.,!?;:]+$/.test(trimmed)) return true;
+
+    // Повторяющиеся символы
+    if (/(.)\1{4,}/.test(trimmed)) return true;
+
+    // Случайный набор букв (мало гласных)
+    const vowels = (trimmed.match(/[аеёиоуыэюяaeiou]/gi) || []).length;
+    const consonants = (trimmed.match(/[бвгджзклмнпрстфхцчшщbcdfghjklmnpqrstvwxyz]/gi) || []).length;
+    if (consonants > 0 && vowels / consonants < 0.2) return true;
+
+    // Известные бессмысленные паттерны
+    const nonsensePatterns = [
+      /^[qwertyuiop]+$/i,
+      /^[asdfghjkl]+$/i,
+      /^[йцукенгшщзхъ]+$/i,
+      /^[фывапролджэ]+$/i,
+      /test|тест|проверка|hello|hi/i
+    ];
+    
+    return nonsensePatterns.some(pattern => pattern.test(trimmed));
+  }
+
+  private generateNonsenseReaction(): string {
+    const reactions = [
+      'Извините, я вас не понял. Вы можете объяснить по-другому?',
+      'Что-то я не понимаю, что вы имеете в виду... Повторите, пожалуйста.',
+      'Мне кажется, вы написали что-то непонятное. Скажите это другими словами?',
+      'Простите, но я не могу разобрать ваш ответ. Давайте начнём сначала?',
+      'Э... Вы серьёзно? Я не понимаю, что вы хотите сказать.',
+      'Извините, но это какая-то белиберда. Объясните нормально, пожалуйста.'
+    ];
+    
+    this.currentSatisfaction = Math.max(0, this.currentSatisfaction - 20);
+    this.currentEmotionalState = 'confused';
+    
+    return this.selectUnusedFromArray(reactions);
+  }
+
+  private generateShortAnswerReaction(): string {
+    const reactions = [
+      'Хм... Это всё, что вы можете сказать? Мне нужно больше информации.',
+      'И? Расскажите подробнее, пожалуйста.',
+      'Слишком коротко. Я не понимаю, что вы предлагаете.',
+      'Окей... А можно поподробнее? Мне важно понять.',
+      'Это хорошо, но объясните, пожалуйста, что это значит для меня?'
+    ];
+    
+    this.currentSatisfaction = Math.max(0, this.currentSatisfaction - 10);
+    
+    return this.selectUnusedFromArray(reactions);
+  }
+
+  private generateQuickSuccessReaction(): string {
+    const reactions = [
+      'Ого, как быстро вы всё объяснили! Спасибо огромное, мне уже намного спокойнее. Вы молодец!',
+      'Вау! Вы так понятно всё рассказали! Я даже не ожидал, что так быстро разберёмся. Огромное спасибо!',
+      'Отлично! Вы прямо сняли камень с души! Теперь всё понятно. Вы профессионал, это видно!',
+      'Спасибо большое! Вы так быстро ответили на все мои вопросы! Чувствую себя гораздо увереннее.',
+      'Какое облегчение! Спасибо, что так терпеливо и быстро всё объяснили. Я готов начать!',
+      'Супер! Теперь мне всё ясно. Вы реально помогли! Давайте записываться?'
+    ];
+    
+    this.currentSatisfaction = Math.min(100, this.currentSatisfaction + 15);
+    this.currentEmotionalState = 'happy';
+    
+    return this.selectUnusedFromArray(reactions);
+  }
+
+  private generateFrustrationReaction(): string {
+    const reactions = [
+      'Слушайте, мы уже долго говорим, а я всё ещё не понимаю... Может, мне лучше в другую клинику обратиться?',
+      'Я устал. Вы так и не ответили толком на мои вопросы. Давайте я подумаю...',
+      'Знаете что, я запутался окончательно. Вы сами понимаете, что говорите?',
+      'Мне кажется, мы ходим по кругу. Я так и не понял толком, что вы предлагаете.',
+      'Честно говоря, я ожидал большего от вашей клиники. Вы меня не убедили.',
+      'Всё, хватит. Я лучше почитаю отзывы и подумаю. Спасибо, но это не то, что мне нужно.'
+    ];
+    
+    this.currentSatisfaction = Math.max(0, this.currentSatisfaction - 15);
+    this.currentEmotionalState = 'angry';
+    
+    return this.selectUnusedFromArray(reactions);
+  }
+
+  private generateReadyToBookResponse(): string {
+    const responses = [
+      'Я готов записаться! Когда можно прийти?',
+      'Отлично, давайте определимся с датой и временем!',
+      'Понятно, записывайте меня! На какое время есть свободное окно?',
+      'Хорошо, я убедился. Хочу записаться к вам на приём.',
+      'Супер! Можно я завтра приду? Или когда удобнее?',
+      'Вы меня убедили! Как мне записаться на процедуру?'
+    ];
+    
+    return this.selectUnusedFromArray(responses);
   }
 
   private selectQuestionType(analysis: any): string {
@@ -674,46 +804,183 @@ export class AdvancedPatientAI {
 
   private updateEmotionalState(analysis: any): void {
     const currentEmotion = this.currentEmotionalState;
+    const previousEmotion = currentEmotion;
 
+    // Бессмысленные сообщения -> раздражение
+    if (this.isNonsenseMessage(this.conversationHistory[this.conversationHistory.length - 2]?.content || '')) {
+      if (currentEmotion === 'angry') {
+        // Уже злой - становится ещё злее (учитывается в анализе)
+      } else if (currentEmotion === 'confused' || currentEmotion === 'nervous') {
+        this.currentEmotionalState = 'angry';
+      } else {
+        this.currentEmotionalState = 'confused';
+      }
+    }
+
+    // Быстрое качественное решение -> радость
+    if (this.conversationHistory.length <= 6 && this.currentSatisfaction >= 75 && analysis.hasEmpathy) {
+      this.currentEmotionalState = 'happy';
+    }
+
+    // Эмпатия помогает успокоиться
     if (analysis.hasEmpathy && this.context.empathyShown >= 2) {
       if (currentEmotion === 'scared') this.currentEmotionalState = 'nervous';
       else if (currentEmotion === 'nervous') this.currentEmotionalState = 'calm';
       else if (currentEmotion === 'angry') this.currentEmotionalState = 'nervous';
     }
 
+    // Сложная терминология -> замешательство
     if (analysis.isTechnical && this.scenario.aiPersonality.knowledge === 'low') {
       if (currentEmotion === 'calm') this.currentEmotionalState = 'confused';
       else if (currentEmotion === 'nervous') this.currentEmotionalState = 'confused';
     }
 
+    // Ясность помогает понять
     if (this.context.clarityLevel >= 3 && currentEmotion === 'confused') {
       this.currentEmotionalState = 'calm';
     }
 
-    if (this.conversationHistory.length > 10 && this.currentSatisfaction > 75) {
+    // Длительный успешный диалог -> довольство
+    if (this.conversationHistory.length > 8 && this.currentSatisfaction > 75) {
       this.currentEmotionalState = 'happy';
     }
 
-    if (this.currentEmotionalState !== currentEmotion) {
+    // Длительный неэффективный диалог -> гнев
+    if (this.conversationHistory.length > 8 && this.currentSatisfaction < 40) {
+      if (currentEmotion !== 'angry') {
+        this.currentEmotionalState = 'angry';
+      }
+    }
+
+    // Резкое падение удовлетворённости -> разочарование
+    const satisfactionDropped = this.conversationHistory.length > 2 && 
+                                 this.currentSatisfaction < 50 && 
+                                 (currentEmotion === 'calm' || currentEmotion === 'happy');
+    if (satisfactionDropped) {
+      this.currentEmotionalState = 'sad';
+    }
+
+    // Постепенное улучшение -> облегчение
+    if (this.currentSatisfaction >= 60 && this.currentSatisfaction < 75 && 
+        (currentEmotion === 'nervous' || currentEmotion === 'scared')) {
+      this.currentEmotionalState = 'relieved';
+    }
+
+    // Отслеживание изменений эмоций
+    if (this.currentEmotionalState !== previousEmotion) {
       this.context.emotionalJourney.push(this.currentEmotionalState);
+      this.trackKeyMoment(
+        `Эмоция изменилась: ${this.emotionToRussian(previousEmotion)} → ${this.emotionToRussian(this.currentEmotionalState)}`,
+        this.isPositiveEmotionChange(previousEmotion, this.currentEmotionalState) ? 'positive' : 'negative',
+        this.isPositiveEmotionChange(previousEmotion, this.currentEmotionalState) ? 5 : -5
+      );
     }
   }
 
+  private emotionToRussian(emotion: string): string {
+    const map: Record<string, string> = {
+      'calm': 'спокойный',
+      'nervous': 'нервный',
+      'angry': 'злой',
+      'scared': 'напуганный',
+      'happy': 'довольный',
+      'sad': 'грустный',
+      'confused': 'растерянный',
+      'excited': 'взволнованный',
+      'relieved': 'облегчённый'
+    };
+    return map[emotion] || emotion;
+  }
+
+  private isPositiveEmotionChange(from: string, to: string): boolean {
+    const emotionScore: Record<string, number> = {
+      'angry': 1,
+      'scared': 2,
+      'confused': 3,
+      'sad': 3,
+      'nervous': 4,
+      'calm': 6,
+      'relieved': 7,
+      'happy': 8
+    };
+    return (emotionScore[to] || 0) > (emotionScore[from] || 0);
+  }
+
   private updateSatisfaction(analysis: any): void {
+    const lastUserMessage = this.conversationHistory[this.conversationHistory.length - 2]?.content || '';
     let change = 0;
 
-    if (analysis.hasEmpathy) change += 15;
-    if (analysis.hasQuestion) change += 10;
-    if (analysis.isSimple) change += 10;
-    if (analysis.sentiment === 'positive') change += 5;
-    if (analysis.sentiment === 'negative') change -= 5;
-    if (analysis.isTechnical && this.scenario.aiPersonality.knowledge === 'low') change -= 20;
+    // Бессмысленное сообщение - сильный негатив
+    if (this.isNonsenseMessage(lastUserMessage)) {
+      change -= 25;
+      this.trackKeyMoment('Получен бессмысленный ответ', 'negative', -25);
+      this.context.adminMistakes.push('Отправлен бессмысленный ответ');
+    }
 
-    if (this.conversationHistory.length > 5) {
+    // Слишком короткий ответ
+    if (lastUserMessage.trim().length < 10 && this.conversationHistory.length > 2) {
+      change -= 12;
+      this.trackKeyMoment('Слишком короткий ответ', 'negative', -12);
+      this.context.adminMistakes.push('Недостаточно информации в ответе');
+    }
+
+    // Быстрое качественное решение - большой бонус
+    if (this.conversationHistory.length <= 6 && analysis.hasEmpathy) {
+      change += 20;
+      this.trackKeyMoment('Быстрое и качественное решение', 'positive', 20);
+      this.context.adminSuccesses.push('Быстро решил вопрос пациента');
+    }
+
+    // Эмпатия всегда ценится
+    if (analysis.hasEmpathy) {
+      change += 15;
+    }
+
+    // Вопросы администратора - проявление интереса
+    if (analysis.hasQuestion) {
+      change += 10;
+      this.context.adminSuccesses.push('Задал уточняющий вопрос');
+    }
+
+    // Простое объяснение
+    if (analysis.isSimple) {
+      change += 10;
+    }
+
+    // Позитивная/негативная тональность
+    if (analysis.sentiment === 'positive') change += 5;
+    if (analysis.sentiment === 'negative') {
+      change -= 10;
+      this.context.adminMistakes.push('Негативный тон в ответе');
+    }
+
+    // Сложная терминология для неподготовленного пациента
+    if (analysis.isTechnical && this.scenario.aiPersonality.knowledge === 'low') {
+      change -= 20;
+    }
+
+    // Бонус за терпение и развёрнутый диалог
+    if (this.conversationHistory.length > 5 && this.currentSatisfaction > 50) {
       change += 5;
     }
 
+    // Штраф за затягивание при низкой удовлетворённости
+    if (this.conversationHistory.length > 8 && this.currentSatisfaction < 40) {
+      change -= 8;
+      this.context.adminMistakes.push('Не смог убедить за разумное время');
+    }
+
+    const previousSatisfaction = this.currentSatisfaction;
     this.currentSatisfaction = Math.max(0, Math.min(100, this.currentSatisfaction + change));
+
+    // Отслеживание значительных изменений
+    if (Math.abs(change) >= 15) {
+      this.trackKeyMoment(
+        `Удовлетворённость изменилась на ${change > 0 ? '+' : ''}${change} (${previousSatisfaction} → ${this.currentSatisfaction})`,
+        change > 0 ? 'positive' : 'negative',
+        change
+      );
+    }
   }
 
   analyzeConversation(): ConversationAnalysis {

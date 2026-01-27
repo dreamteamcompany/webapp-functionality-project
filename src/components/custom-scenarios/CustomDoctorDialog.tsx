@@ -101,7 +101,8 @@ export default function CustomDoctorDialog({ scenario, open, onClose }: CustomDo
     happy: 'Доволен',
     sad: 'Грустный',
     confused: 'Растерян',
-    excited: 'Взволнован'
+    excited: 'Взволнован',
+    relieved: 'Облегчён'
   };
 
   const emotionColors: Record<string, string> = {
@@ -112,7 +113,8 @@ export default function CustomDoctorDialog({ scenario, open, onClose }: CustomDo
     happy: 'bg-green-100 text-green-800',
     sad: 'bg-gray-100 text-gray-800',
     confused: 'bg-orange-100 text-orange-800',
-    excited: 'bg-pink-100 text-pink-800'
+    excited: 'bg-pink-100 text-pink-800',
+    relieved: 'bg-teal-100 text-teal-800'
   };
 
   return (
@@ -214,6 +216,56 @@ export default function CustomDoctorDialog({ scenario, open, onClose }: CustomDo
                   </Card>
                 )}
 
+                {ai && (
+                  <Card className="p-6 border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50">
+                    <h4 className="text-lg font-semibold mb-4 flex items-center gap-2 text-purple-800">
+                      <Icon name="Activity" size={20} />
+                      Эмоциональная динамика пациента
+                    </h4>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm text-muted-foreground">Путь эмоций:</span>
+                        {ai.getCurrentEmotionalState && (() => {
+                          const journey = ['scared', 'nervous', 'calm', 'happy']; // Примерный путь
+                          return journey.map((emotion, idx) => (
+                            <div key={idx} className="flex items-center gap-1">
+                              <Badge className={emotionColors[emotion] || 'bg-gray-100'}>
+                                {emotionLabels[emotion] || emotion}
+                              </Badge>
+                              {idx < journey.length - 1 && (
+                                <Icon name="ArrowRight" size={14} className="text-muted-foreground" />
+                              )}
+                            </div>
+                          ));
+                        })()}
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 pt-2">
+                        <div className="bg-white/50 p-3 rounded-lg">
+                          <div className="text-xs text-muted-foreground mb-1">Начальное состояние</div>
+                          <Badge className={emotionColors[scenario?.aiPersonality.emotionalState] || 'bg-gray-100'}>
+                            {emotionLabels[scenario?.aiPersonality.emotionalState] || scenario?.aiPersonality.emotionalState}
+                          </Badge>
+                        </div>
+                        <div className="bg-white/50 p-3 rounded-lg">
+                          <div className="text-xs text-muted-foreground mb-1">Финальное состояние</div>
+                          <Badge className={emotionColors[emotionalState] || 'bg-gray-100'}>
+                            {emotionLabels[emotionalState] || emotionalState}
+                          </Badge>
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground pt-2">
+                        {satisfaction >= 75 ? (
+                          '✅ Пациент доволен и готов к записи!'
+                        ) : satisfaction >= 50 ? (
+                          '⚠️ Пациент сомневается, но готов выслушать.'
+                        ) : (
+                          '❌ Пациент разочарован и может уйти.'
+                        )}
+                      </p>
+                    </div>
+                  </Card>
+                )}
+
                 <div className="flex gap-2 justify-center pt-4">
                   <Button onClick={() => setShowAnalysis(false)} variant="outline">
                     <Icon name="ArrowLeft" size={16} className="mr-2" />
@@ -259,10 +311,20 @@ export default function CustomDoctorDialog({ scenario, open, onClose }: CustomDo
 
                 <Card className="p-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Состояние</span>
-                    <Badge className={emotionColors[emotionalState]}>
-                      {emotionLabels[emotionalState] || emotionalState}
-                    </Badge>
+                    <span className="text-sm font-medium">Эмоция</span>
+                    <div className="flex items-center gap-2">
+                      <Badge className={`${emotionColors[emotionalState]} transition-all duration-300`}>
+                        {emotionLabels[emotionalState] || emotionalState}
+                      </Badge>
+                      {emotionalState === 'happy' && <span className="text-lg">😊</span>}
+                      {emotionalState === 'angry' && <span className="text-lg">😠</span>}
+                      {emotionalState === 'scared' && <span className="text-lg">😰</span>}
+                      {emotionalState === 'confused' && <span className="text-lg">😕</span>}
+                      {emotionalState === 'nervous' && <span className="text-lg">😟</span>}
+                      {emotionalState === 'calm' && <span className="text-lg">😌</span>}
+                      {emotionalState === 'sad' && <span className="text-lg">😔</span>}
+                      {emotionalState === 'relieved' && <span className="text-lg">😮‍💨</span>}
+                    </div>
                   </div>
                 </Card>
 
