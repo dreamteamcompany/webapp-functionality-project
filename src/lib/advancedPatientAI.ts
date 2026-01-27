@@ -251,17 +251,180 @@ export class AdvancedPatientAI {
   }
 
   getGreeting(): string {
-    const baseGreeting = this.scenario.initialMessage;
-    const followUpQuestions = [
-      'Что вы можете мне посоветовать?',
-      'Как мне быть?',
-      'Скажите, что мне делать?',
-      'Вы можете мне помочь?',
-      'Что вы думаете об этом?'
+    // Генерируем уникальное естественное приветствие на основе сценария
+    return this.generateNaturalInitialMessage();
+  }
+
+  /**
+   * Генерация уникального естественного первичного сообщения
+   * Каждый раз пациент формулирует запрос по-новому
+   */
+  private generateNaturalInitialMessage(): string {
+    const concern = this.scenario.aiPersonality.concerns[0];
+    const emotionalState = this.scenario.aiPersonality.emotionalState;
+    const parts: string[] = [];
+
+    // 1. ПРИВЕТСТВИЕ (вариативное)
+    const greetings = [
+      'Здравствуйте',
+      'Добрый день',
+      'Привет',
+      'Здравствуйте, я к вам по записи',
+      'День добрый',
+      'Извините, что беспокою',
+      'Добрый вечер'
     ];
-    
-    const followUp = followUpQuestions[Math.floor(Math.random() * followUpQuestions.length)];
-    return `${baseGreeting} ${followUp}`;
+    parts.push(this.selectUnusedFromArray(greetings));
+
+    // 2. ОПИСАНИЕ ПРОБЛЕМЫ (естественное, вариативное)
+    const problemDescriptions = this.generateProblemDescription(concern, emotionalState);
+    parts.push(problemDescriptions);
+
+    // 3. ЭМОЦИОНАЛЬНЫЙ КОНТЕКСТ (опционально, зависит от состояния)
+    const emotionalContext = this.generateEmotionalContext(emotionalState);
+    if (emotionalContext && Math.random() > 0.3) {
+      parts.push(emotionalContext);
+    }
+
+    // 4. ВОПРОС/ПРОСЬБА (вариативный)
+    const request = this.generateInitialRequest(emotionalState);
+    parts.push(request);
+
+    return parts.join(' ');
+  }
+
+  /**
+   * Генерация описания проблемы (уникальное каждый раз)
+   */
+  private generateProblemDescription(concern: string, emotionalState: string): string {
+    const concernLower = concern.toLowerCase();
+
+    // Паттерны для разных типов проблем
+    if (concernLower.includes('боль') || concernLower.includes('болит')) {
+      return this.selectUnusedFromArray([
+        `у меня ${concern.toLowerCase()}, уже не могу терпеть`,
+        `вот такая проблема: ${concern.toLowerCase()}`,
+        `${concern}, и это очень мешает жить`,
+        `меня беспокоит ${concern.toLowerCase()}`,
+        `у меня проблема — ${concern.toLowerCase()}, что делать?`,
+        `${concern} уже давно, надоело терпеть`,
+        `помогите, ${concern.toLowerCase()}, сил нет`,
+        `такая ситуация: ${concern.toLowerCase()}`
+      ]);
+    }
+
+    if (concernLower.includes('косметическ') || concernLower.includes('внешн')) {
+      return this.selectUnusedFromArray([
+        `я хочу улучшить внешний вид, ${concern.toLowerCase()}`,
+        `давно хотел(а) решить вопрос с ${concern.toLowerCase()}`,
+        `меня не устраивает ${concern.toLowerCase()}`,
+        `хочу сделать что-то с ${concern.toLowerCase()}`,
+        `интересует ${concern}, можно ли что-то сделать?`,
+        `${concern} — это реально исправить?`
+      ]);
+    }
+
+    if (concernLower.includes('консультаци') || concernLower.includes('проверк')) {
+      return this.selectUnusedFromArray([
+        `хочу проконсультироваться по поводу ${concern.toLowerCase()}`,
+        `мне нужна помощь с ${concern.toLowerCase()}`,
+        `я слышал про ${concern.toLowerCase()}, хочу узнать подробнее`,
+        `интересует вопрос: ${concern}`,
+        `можно ли у вас ${concern.toLowerCase()}?`
+      ]);
+    }
+
+    // Общий паттерн
+    return this.selectUnusedFromArray([
+      `у меня такая проблема: ${concern.toLowerCase()}`,
+      `меня беспокоит ${concern.toLowerCase()}`,
+      `я по поводу ${concern.toLowerCase()}`,
+      `хочу решить вопрос с ${concern.toLowerCase()}`,
+      `${concern} — вы можете помочь?`,
+      `слушайте, у меня ${concern.toLowerCase()}, что делать?`
+    ]);
+  }
+
+  /**
+   * Генерация эмоционального контекста
+   */
+  private generateEmotionalContext(emotionalState: string): string | null {
+    const contexts: Record<string, string[]> = {
+      scared: [
+        'Честно говоря, я очень боюсь...',
+        'Мне страшновато, если честно.',
+        'Я раньше никогда такого не делал(а), волнуюсь.',
+        'Очень переживаю, не знаю что ждать.',
+        'Жутко нервничаю, простите.'
+      ],
+      anxious: [
+        'Немного переживаю, конечно...',
+        'Волнуюсь, честно сказать.',
+        'Не скрою, есть опасения.',
+        'Тревожно как-то, не знаю почему.',
+        'Беспокоюсь немного.'
+      ],
+      angry: [
+        'Уже устал(а) с этим мучиться!',
+        'Надоело это всё, честно.',
+        'Замучился(ась) совсем.',
+        'Сил больше нет терпеть.',
+        'Достало уже, нужно решать.'
+      ],
+      confused: [
+        'Не знаю даже, с чего начать...',
+        'Запутался(ась) совсем.',
+        'Столько информации, голова кругом.',
+        'Не могу разобраться сам(а).'
+      ],
+      sad: [
+        'Это очень портит мне жизнь...',
+        'Из-за этого столько проблем...',
+        'Это угнетает меня.',
+        'Настроение постоянно плохое из-за этого.'
+      ]
+    };
+
+    const stateContexts = contexts[emotionalState];
+    if (!stateContexts) return null;
+
+    return this.selectUnusedFromArray(stateContexts);
+  }
+
+  /**
+   * Генерация финального вопроса/просьбы
+   */
+  private generateInitialRequest(emotionalState: string): string {
+    const scared_requests = [
+      'Вы можете мне помочь? Только объясните всё подробно, пожалуйста.',
+      'Скажите, что мне делать? И насколько это страшно?',
+      'Помогите разобраться, я не знаю с чего начать...',
+      'Что вы посоветуете? Мне правда нужна помощь.'
+    ];
+
+    const angry_requests = [
+      'Что вы можете предложить? Нужно что-то решать уже.',
+      'Давайте быстрее к делу, что делать будем?',
+      'Скажите сразу — это решаемо или нет?',
+      'Можете помочь или тоже ничего не сделаете?'
+    ];
+
+    const neutral_requests = [
+      'Что вы можете мне посоветовать?',
+      'Расскажите, какие варианты есть?',
+      'Помогите, пожалуйста, разобраться.',
+      'Что мне делать в такой ситуации?',
+      'Какие у меня варианты решения?',
+      'Посоветуйте, как быть?'
+    ];
+
+    if (emotionalState === 'scared' || emotionalState === 'anxious') {
+      return this.selectUnusedFromArray(scared_requests);
+    } else if (emotionalState === 'angry') {
+      return this.selectUnusedFromArray(angry_requests);
+    } else {
+      return this.selectUnusedFromArray(neutral_requests);
+    }
   }
 
   async getResponse(userMessage: string): Promise<AIResponse> {
@@ -486,21 +649,10 @@ export class AdvancedPatientAI {
       .map(m => m.content);
     const lastAdminMessage = lastAdminMessages[lastAdminMessages.length - 1] || '';
 
-    // 1. РЕАКЦИЯ НА КАЧЕСТВО ОБЩЕНИЯ АДМИНИСТРАТОРА
-    if (adminProfile.empathyLevel > 70 && adminProfile.responsivenessLevel > 60) {
-      // Администратор очень внимателен и отзывчив
-      parts.push(this.selectUnusedFromArray([
-        'Спасибо, вы очень внимательны! Это правда важно для меня.',
-        'Я чувствую, что вы искренне хотите помочь. Это приятно.',
-        'Вы отлично меня понимаете, спасибо за такое отношение!'
-      ]));
-    } else if (adminProfile.empathyLevel < 30 && messageCount > 4) {
-      // Администратор холодный и формальный
-      parts.push(this.selectUnusedFromArray([
-        'Хм... Вы могли бы быть немного более... человечнее?',
-        'Мне кажется, вы не очень понимаете, как мне тревожно.',
-        'Я просто хочу, чтобы меня услышали, а не просто получили информацию.'
-      ]));
+    // 1. ЕСТЕСТВЕННАЯ ЭМОЦИОНАЛЬНАЯ РЕАКЦИЯ НА ПОВЕДЕНИЕ АДМИНИСТРАТОРА
+    const emotionalReaction = this.generateEmotionalReactionToAdmin(adminProfile, analysis, messageCount);
+    if (emotionalReaction) {
+      parts.push(emotionalReaction);
     }
 
     // 2. РЕАКЦИЯ НА ОСНОВЕ ФАЗЫ РАЗГОВОРА
@@ -622,6 +774,88 @@ export class AdvancedPatientAI {
     }
     
     return 'Расскажите, пожалуйста, как это будет проходить?';
+  }
+
+  /**
+   * Естественная эмоциональная реакция на качество общения администратора
+   * Как в симуляторе продаж - живые, человеческие реакции
+   */
+  private generateEmotionalReactionToAdmin(
+    adminProfile: any, 
+    analysis: any, 
+    messageCount: number
+  ): string | null {
+    const empathy = adminProfile.empathyLevel;
+    const responsiveness = adminProfile.responsivenessLevel;
+    const clarity = adminProfile.clarityLevel;
+    const professionalism = adminProfile.professionalismLevel;
+
+    // РЕАКЦИЯ НА ОТЛИЧНОЕ ОБСЛУЖИВАНИЕ (эмпатия + отзывчивость)
+    if (empathy > 70 && responsiveness > 60) {
+      return this.selectUnusedFromArray([
+        'Вау, как приятно с вами общаться! Чувствую, что вы действительно понимаете мою ситуацию.',
+        'Спасибо огромное за такое отношение! Редко встретишь настолько внимательного человека.',
+        'Знаете, я очень ценю вашу заботу. Вы реально помогаете, а не просто отвечаете.',
+        'Вы прямо душу греете своим вниманием! Спасибо, что так серьёзно отнеслись к моей проблеме.',
+        'Ух ты, какой профессионализм! И при этом так по-человечески всё объясняете.'
+      ]);
+    }
+
+    // РЕАКЦИЯ НА ХАЛАТНОСТЬ (низкая эмпатия + низкая отзывчивость)
+    if (empathy < 30 && responsiveness < 40 && messageCount > 3) {
+      return this.selectUnusedFromArray([
+        'Извините, но у меня ощущение, что вам всё равно на мою проблему...',
+        'Слушайте, а вы вообще слушаете, что я говорю? Или просто отписываетесь?',
+        'Знаете что, мне кажется вы не очень хотите помочь. Может, к другому специалисту обратиться?',
+        'Хм... Как-то холодно вы общаетесь. Я же к вам за помощью пришёл(ла), а не просто так.',
+        'Ощущение, что вам лишь бы отделаться от меня. Это нормально вообще?',
+        'Простите, но вы могли бы проявить хоть немного участия? Мне правда нужна помощь.'
+      ]);
+    }
+
+    // РЕАКЦИЯ НА НЕВНЯТНЫЕ ОБЪЯСНЕНИЯ (низкая ясность)
+    if (clarity < 40 && messageCount > 2) {
+      return this.selectUnusedFromArray([
+        'Извините, но я вообще ничего не понял(а) из того, что вы сказали...',
+        'Можно попроще? А то я совсем запутался(лась) в ваших объяснениях.',
+        'Стоп-стоп-стоп... Давайте ещё раз, но понятными словами?',
+        'Вы извините, но для меня это всё как на китайском... Объясните по-человечески, пожалуйста.',
+        'Я не медик, мне нужно чтобы было понятно. А то я вообще ничего не улавливаю.'
+      ]);
+    }
+
+    // РЕАКЦИЯ НА БЫСТРЫЕ ОТПИСКИ (низкая отзывчивость, короткие ответы)
+    if (responsiveness < 35 && messageCount > 4) {
+      return this.selectUnusedFromArray([
+        'А можно подробнее? Вы так коротко отвечаете, что я не успеваю понять...',
+        'Ну хоть немного поясните, пожалуйста! Мне правда важно разобраться.',
+        'Слушайте, у меня куча вопросов, а вы отвечаете буквально двумя словами...',
+        'Не торопитесь, пожалуйста! Расскажите нормально, что к чему.',
+        'Такое ощущение, что вы спешите куда-то. Можно чуть подробнее?'
+      ]);
+    }
+
+    // РЕАКЦИЯ НА ПРОФЕССИОНАЛИЗМ БЕЗ ЭМПАТИИ (высокий профессионализм, низкая эмпатия)
+    if (professionalism > 60 && empathy < 35 && messageCount > 3) {
+      return this.selectUnusedFromArray([
+        'Вы, конечно, знаете своё дело, но хотелось бы чуть больше человечности...',
+        'Всё понятно по делу, спасибо. Но как-то очень формально всё.',
+        'Информация хорошая, но чувствую себя как номерок в очереди, а не как человек...',
+        'Может, я не прав(а), но ощущение что вы робот, а не живой человек.'
+      ]);
+    }
+
+    // РЕАКЦИЯ НА ХОРОШУЮ ЯСНОСТЬ (высокая ясность)
+    if (clarity > 75 && messageCount > 2) {
+      return this.selectUnusedFromArray([
+        'О, теперь понятно! Спасибо, что так доходчиво объяснили.',
+        'Вот это я понимаю - ясно и по делу! Спасибо большое.',
+        'Супер, как вы объясняете! Всё сразу разложилось по полочкам в голове.',
+        'Ага, теперь дошло! Вы классно объясняете, без лишней воды.'
+      ]);
+    }
+
+    return null;
   }
 
   /**
