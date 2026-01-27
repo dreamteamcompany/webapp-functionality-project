@@ -15,18 +15,40 @@ interface ScenarioPlayerProps {
 }
 
 export default function ScenarioPlayer({ scenario, onClose }: ScenarioPlayerProps) {
-  const [ai] = useState(() => new CustomAI(scenario));
-  const [messages, setMessages] = useState<Array<{ role: 'user' | 'ai'; content: string }>>([]);
+  const storageKey = `scenario_${scenario.id}_history`;
+  
+  const [ai] = useState(() => {
+    const aiInstance = new CustomAI(scenario);
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        aiInstance.loadHistory(parsed);
+      } catch (e) {
+        console.error('Failed to restore history:', e);
+      }
+    }
+    return aiInstance;
+  });
+  
+  const [messages, setMessages] = useState<Array<{ role: 'user' | 'ai'; content: string }>>(() => {
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return parsed.messages || [];
+      } catch (e) {
+        return [{ role: 'ai', content: ai.getGreeting() }];
+      }
+    }
+    return [{ role: 'ai', content: ai.getGreeting() }];
+  });
+  
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [analysis, setAnalysis] = useState<ConversationAnalysis | null>(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const greeting = ai.getGreeting();
-    setMessages([{ role: 'ai', content: greeting }]);
-  }, []);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -35,6 +57,16 @@ export default function ScenarioPlayer({ scenario, onClose }: ScenarioPlayerProp
       }, 100);
     }
   }, [messages]);
+
+  useEffect(() => {
+    const historyData = {
+      messages,
+      satisfaction: ai.getCurrentSatisfaction(),
+      emotionalState: ai.getCurrentEmotionalState(),
+      timestamp: Date.now()
+    };
+    localStorage.setItem(storageKey, JSON.stringify(historyData));
+  }, [messages, storageKey, ai]);
 
   const handleSend = async () => {
     if (!input.trim() || isProcessing) return;
@@ -52,6 +84,11 @@ export default function ScenarioPlayer({ scenario, onClose }: ScenarioPlayerProp
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleClearHistory = () => {
+    localStorage.removeItem(storageKey);
+    window.location.reload();
   };
 
   const handleAnalyze = () => {
@@ -105,9 +142,14 @@ export default function ScenarioPlayer({ scenario, onClose }: ScenarioPlayerProp
             <h2 className="text-xl font-semibold">{scenario.name}</h2>
             <p className="text-sm text-muted-foreground">{scenario.context.role}</p>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <Icon name="X" size={20} />
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="icon" onClick={handleClearHistory} title="Начать заново">
+              <Icon name="RotateCcw" size={20} />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <Icon name="X" size={20} />
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -214,7 +256,7 @@ export default function ScenarioPlayer({ scenario, onClose }: ScenarioPlayerProp
                 <ul className="space-y-2">
                   {analysis!.recommendations.map((rec, i) => (
                     <li key={i} className="flex items-start gap-2 text-yellow-700">
-                      <Icon name="AlertCircle" size={16} className="mt-0.5 flex-shrink-0" />
+                      <Icon name="ArrowRight" size={16} className="mt-0.5 flex-shrink-0" />
                       <span>{rec}</span>
                     </li>
                   ))}
@@ -225,45 +267,25 @@ export default function ScenarioPlayer({ scenario, onClose }: ScenarioPlayerProp
             {analysis!.missedOpportunities.length > 0 && (
               <Card className="p-6 border-red-200 bg-red-50">
                 <h4 className="text-lg font-semibold mb-3 flex items-center gap-2 text-red-800">
-                  <Icon name="AlertTriangle" size={20} />
+                  <Icon name="AlertCircle" size={20} />
                   Упущенные возможности
                 </h4>
                 <ul className="space-y-2">
-                  {analysis!.missedOpportunities.map((opp, i) => (
+                  {analysis!.missedOpportunities.map((miss, i) => (
                     <li key={i} className="flex items-start gap-2 text-red-700">
-                      <Icon name="X" size={16} className="mt-0.5 flex-shrink-0" />
-                      <span>{opp}</span>
+                      <Icon name="Minus" size={16} className="mt-0.5 flex-shrink-0" />
+                      <span>{miss}</span>
                     </li>
                   ))}
                 </ul>
               </Card>
             )}
-
-            <div className="flex gap-2 justify-center">
-              <Button onClick={onClose} variant="outline">
-                Закрыть
-              </Button>
-              <Button onClick={() => window.location.reload()}>
-                <Icon name="RotateCcw" size={16} className="mr-2" />
-                Попробовать снова
-              </Button>
-            </div>
           </div>
         </div>
       ) : (
         <>
-          <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-            <div className="max-w-3xl mx-auto space-y-4">
-              <Card className="p-4 bg-blue-50 border-blue-200">
-                <div className="flex items-start gap-3">
-                  <Icon name="Info" size={20} className="text-blue-600 mt-0.5" />
-                  <div className="space-y-2 text-sm">
-                    <p><strong>Ситуация:</strong> {scenario.context.situation}</p>
-                    <p><strong>Ваша цель:</strong> {scenario.context.goal}</p>
-                  </div>
-                </div>
-              </Card>
-
+          <ScrollArea className="flex-1 p-4">
+            <div className="space-y-4 max-w-3xl mx-auto">
               {messages.map((msg, i) => (
                 <div
                   key={i}
@@ -280,13 +302,13 @@ export default function ScenarioPlayer({ scenario, onClose }: ScenarioPlayerProp
                   </Card>
                 </div>
               ))}
-
               {isProcessing && (
                 <div className="flex justify-start">
                   <Card className="p-4 bg-muted">
-                    <div className="flex items-center gap-2">
-                      <Icon name="Loader2" size={16} className="animate-spin" />
-                      <span className="text-sm text-muted-foreground">Печатает...</span>
+                    <div className="flex gap-2">
+                      <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '300ms' }} />
                     </div>
                   </Card>
                 </div>
@@ -301,38 +323,47 @@ export default function ScenarioPlayer({ scenario, onClose }: ScenarioPlayerProp
                 <Textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={(e) => {
+                  onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
                       handleSend();
                     }
                   }}
                   placeholder="Введите ваш ответ..."
-                  className="resize-none"
-                  rows={2}
+                  className="min-h-[80px] resize-none"
+                  disabled={isProcessing || messageCount >= maxMessages}
                 />
                 <div className="flex flex-col gap-2">
-                  <Button onClick={handleSend} disabled={!input.trim() || isProcessing || messageCount >= maxMessages}>
+                  <Button
+                    onClick={handleSend}
+                    disabled={!input.trim() || isProcessing || messageCount >= maxMessages}
+                    size="icon"
+                    className="h-10 w-10"
+                  >
                     <Icon name="Send" size={18} />
                   </Button>
                   <Button
-                    variant="outline"
                     onClick={handleAnalyze}
-                    disabled={messages.length < 3}
+                    variant="outline"
+                    size="icon"
+                    disabled={messageCount < 1}
+                    className="h-10 w-10"
                   >
-                    <Icon name="BarChart" size={18} />
+                    <Icon name="BarChart3" size={18} />
                   </Button>
                 </div>
               </div>
-              {messageCount >= maxMessages ? (
-                <div className="flex items-center justify-center gap-2 text-sm text-orange-600">
-                  <Icon name="AlertCircle" size={16} />
-                  <span>Достигнут лимит сообщений. Проанализируйте диалог.</span>
+
+              {remainingMessages <= 5 && remainingMessages > 0 && (
+                <div className="text-sm text-muted-foreground text-center">
+                  Осталось сообщений: {remainingMessages}
                 </div>
-              ) : (
-                <p className="text-xs text-muted-foreground text-center">
-                  Enter - отправить • Shift+Enter - новая строка {remainingMessages <= 5 && `• Осталось сообщений: ${remainingMessages}`}
-                </p>
+              )}
+
+              {messageCount >= maxMessages && (
+                <div className="text-sm text-destructive text-center font-medium">
+                  Лимит сообщений достигнут. Нажмите кнопку анализа для получения результатов.
+                </div>
               )}
             </div>
           </div>
