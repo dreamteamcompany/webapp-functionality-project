@@ -3638,4 +3638,287 @@ export class AdminSimulator {
       totalSteps: this.state.currentStep
     };
   }
+
+  /**
+   * Глубокий анализ диалога для DeepAnalysisModal
+   */
+  getDeepAnalysis(): any {
+    const analysis = this.getAnalysis();
+    const score = analysis.finalScore;
+    
+    // Параметры в русском названии
+    const parameterNames: Record<string, string> = {
+      empathy: 'Эмпатия',
+      professionalism: 'Профессионализм',
+      efficiency: 'Эффективность',
+      salesSkill: 'Навыки продаж',
+      conflictResolution: 'Разрешение конфликтов'
+    };
+
+    // Строим модель поведения администратора
+    const patientBehaviorModel = {
+      trustLevel: Math.min(100, (analysis.parameters.professionalism / analysis.targetParameters.professionalism) * 100),
+      cooperationLevel: Math.min(100, (analysis.parameters.empathy / analysis.targetParameters.empathy) * 100),
+      anxietyLevel: Math.max(0, 100 - (analysis.parameters.conflictResolution / analysis.targetParameters.conflictResolution) * 100),
+      informationAbsorption: Math.min(100, (analysis.parameters.efficiency / analysis.targetParameters.efficiency) * 100),
+      decisionReadiness: Math.min(100, (analysis.parameters.salesSkill / analysis.targetParameters.salesSkill) * 100),
+      primaryConcerns: analysis.weaknesses.map(w => parameterNames[w] || w),
+      unresolvedDouBts: analysis.weaknesses.map(w => 
+        `Недостаточно развит навык: ${parameterNames[w] || w}`
+      ),
+      emotionalTriggers: this.state.scenario.wrongBehaviors.slice(0, 3)
+    };
+
+    // Сценарии разговора
+    const conversationScenarios = [
+      {
+        scenarioType: 'actual' as const,
+        description: 'Реальный сценарий вашего диалога',
+        keyMoments: this.buildKeyMoments(),
+        outcome: score >= 90 ? 'Превосходный результат! Пациент полностью доволен.' :
+                score >= 70 ? 'Хороший результат. Пациент готов записаться.' :
+                score >= 50 ? 'Удовлетворительно. Есть что улучшить.' :
+                'Пациент остался недоволен.',
+        patientResponse: score >= 70 ? 
+          'Спасибо за помощь! Вы меня убедили, записываю меня на приём!' :
+          'Спасибо за информацию, но мне нужно подумать...'
+      },
+      {
+        scenarioType: 'ideal' as const,
+        description: 'Идеальный сценарий при правильном подходе',
+        keyMoments: this.buildIdealScenario(),
+        outcome: 'Пациент полностью доверяет, все сомнения развеяны, готов записаться',
+        patientResponse: 'Отлично! Вы ответили на все мои вопросы. Когда можно прийти?'
+      }
+    ];
+
+    // Глубокие инсайты
+    const deepInsights = this.buildDeepInsights(analysis);
+
+    return {
+      alignmentScore: Math.min(100, (analysis.parameters.professionalism / analysis.targetParameters.professionalism) * 100),
+      communicationScore: Math.min(100, (analysis.parameters.empathy / analysis.targetParameters.empathy) * 100),
+      goalProgressScore: Math.min(100, (analysis.parameters.salesSkill / analysis.targetParameters.salesSkill) * 100),
+      overallScore: score,
+      recommendations: this.buildRecommendations(analysis),
+      goodPoints: this.buildGoodPoints(analysis),
+      missedOpportunities: this.buildMissedOpportunities(analysis),
+      patientBehaviorModel,
+      conversationScenarios,
+      deepInsights
+    };
+  }
+
+  private buildKeyMoments(): any[] {
+    const moments: any[] = [];
+    let step = 0;
+
+    this.state.dialogue.forEach((msg, index) => {
+      if (msg.speaker === 'admin') {
+        step++;
+        // Анализируем выбор администратора
+        // Здесь можно добавить более сложную логику на основе истории выборов
+        moments.push({
+          turn: step,
+          what: `Администратор: "${msg.text.substring(0, 50)}..."`,
+          impact: 'neutral' as const,
+          satisfactionChange: 0
+        });
+      }
+    });
+
+    return moments;
+  }
+
+  private buildIdealScenario(): any[] {
+    return [
+      {
+        turn: 1,
+        what: 'Теплое приветствие и проявление эмпатии',
+        impact: 'positive' as const,
+        satisfactionChange: 15
+      },
+      {
+        turn: 2,
+        what: 'Задан уточняющий вопрос о проблеме',
+        impact: 'positive' as const,
+        satisfactionChange: 10
+      },
+      {
+        turn: 3,
+        what: 'Дано понятное объяснение без терминов',
+        impact: 'positive' as const,
+        satisfactionChange: 12
+      },
+      {
+        turn: 4,
+        what: 'Предложено несколько вариантов решения',
+        impact: 'positive' as const,
+        satisfactionChange: 10
+      },
+      {
+        turn: 5,
+        what: 'Закрытие сделки с записью пациента',
+        impact: 'positive' as const,
+        satisfactionChange: 15
+      }
+    ];
+  }
+
+  private buildDeepInsights(analysis: SimulatorAnalysis): any[] {
+    const insights: any[] = [];
+    const parameterNames: Record<string, string> = {
+      empathy: 'Эмпатия',
+      professionalism: 'Профессионализм',
+      efficiency: 'Эффективность',
+      salesSkill: 'Навыки продаж',
+      conflictResolution: 'Разрешение конфликтов'
+    };
+
+    // Инсайт по сильным сторонам
+    if (analysis.strengths.length > 0) {
+      insights.push({
+        category: 'professionalism',
+        insight: `Ваши сильные стороны: ${analysis.strengths.map(s => parameterNames[s]).join(', ')}`,
+        evidence: analysis.strengths.map(s => 
+          `Параметр "${parameterNames[s]}" превышает целевое значение на ${Math.abs(analysis.gaps[s as keyof typeof analysis.gaps])} баллов`
+        ),
+        recommendation: 'Продолжайте использовать эти навыки в работе. Они являются вашим конкурентным преимуществом.'
+      });
+    }
+
+    // Инсайт по слабым сторонам
+    if (analysis.weaknesses.length > 0) {
+      insights.push({
+        category: 'communication',
+        insight: `Области для развития: ${analysis.weaknesses.map(w => parameterNames[w]).join(', ')}`,
+        evidence: analysis.weaknesses.map(w => 
+          `Параметр "${parameterNames[w]}" ниже целевого на ${analysis.gaps[w as keyof typeof analysis.gaps]} баллов`
+        ),
+        recommendation: 'Сфокусируйтесь на развитии этих навыков. Пройдите дополнительные сценарии для практики.'
+      });
+    }
+
+    // Инсайт по эмпатии
+    const empathyGap = analysis.gaps.empathy;
+    if (empathyGap > 10) {
+      insights.push({
+        category: 'empathy',
+        insight: 'Недостаточно эмпатии в общении с пациентом',
+        evidence: [
+          'Пациент нуждается в большем понимании и поддержке',
+          'Эмоциональная связь не установлена',
+          'Упущены возможности проявить сочувствие'
+        ],
+        recommendation: 'Используйте фразы: "Я понимаю ваши переживания", "Это действительно важно", "Давайте вместе найдём решение"'
+      });
+    }
+
+    // Инсайт по продажам
+    const salesGap = analysis.gaps.salesSkill;
+    if (salesGap > 10) {
+      insights.push({
+        category: 'trust',
+        insight: 'Навыки продаж требуют улучшения',
+        evidence: [
+          'Не все возражения пациента закрыты',
+          'Не хватило убедительности в презентации услуг',
+          'Упущены моменты для допродаж'
+        ],
+        recommendation: 'Изучите технику СПИН-продаж. Задавайте больше вопросов, выявляйте потребности, предлагайте ценность.'
+      });
+    }
+
+    return insights;
+  }
+
+  private buildRecommendations(analysis: SimulatorAnalysis): string[] {
+    const recommendations: string[] = [];
+    const parameterNames: Record<string, string> = {
+      empathy: 'эмпатию',
+      professionalism: 'профессионализм',
+      efficiency: 'эффективность',
+      salesSkill: 'навыки продаж',
+      conflictResolution: 'навыки разрешения конфликтов'
+    };
+
+    analysis.weaknesses.forEach(weakness => {
+      recommendations.push(
+        `Развивайте ${parameterNames[weakness]} - пройдите дополнительные тренировки по этому навыку`
+      );
+    });
+
+    if (analysis.finalScore < 70) {
+      recommendations.push('Повторите сценарий, уделяя больше внимания правильным поведенческим паттернам');
+    }
+
+    if (analysis.gaps.empathy > 15) {
+      recommendations.push('Проявляйте больше сочувствия и понимания к проблемам пациента');
+    }
+
+    if (analysis.gaps.salesSkill > 15) {
+      recommendations.push('Работайте над техниками убеждения и закрытия сделки');
+    }
+
+    return recommendations.length > 0 ? recommendations : ['Отличная работа! Продолжайте практиковаться для закрепления навыков.'];
+  }
+
+  private buildGoodPoints(analysis: SimulatorAnalysis): string[] {
+    const goodPoints: string[] = [];
+    const parameterNames: Record<string, string> = {
+      empathy: 'Эмпатия',
+      professionalism: 'Профессионализм',
+      efficiency: 'Эффективность',
+      salesSkill: 'Навыки продаж',
+      conflictResolution: 'Разрешение конфликтов'
+    };
+
+    analysis.strengths.forEach(strength => {
+      goodPoints.push(
+        `${parameterNames[strength]}: вы превысили целевой показатель`
+      );
+    });
+
+    if (analysis.finalScore >= 90) {
+      goodPoints.push('Превосходный результат! Вы показали мастерство в общении с пациентом');
+    } else if (analysis.finalScore >= 70) {
+      goodPoints.push('Хороший результат! Пациент остался доволен вашей работой');
+    }
+
+    if (analysis.parameters.empathy >= analysis.targetParameters.empathy) {
+      goodPoints.push('Вы успешно установили эмоциональный контакт с пациентом');
+    }
+
+    if (analysis.parameters.professionalism >= analysis.targetParameters.professionalism) {
+      goodPoints.push('Вы продемонстрировали высокий уровень профессионализма');
+    }
+
+    return goodPoints.length > 0 ? goodPoints : ['Вы завершили сценарий. Проанализируйте свои действия для улучшения результата.'];
+  }
+
+  private buildMissedOpportunities(analysis: SimulatorAnalysis): string[] {
+    const missed: string[] = [];
+
+    if (analysis.gaps.empathy > 10) {
+      missed.push('Упущена возможность проявить больше эмпатии и сочувствия');
+    }
+
+    if (analysis.gaps.salesSkill > 10) {
+      missed.push('Не все возражения пациента были закрыты убедительно');
+    }
+
+    if (analysis.gaps.efficiency > 10) {
+      missed.push('Диалог можно было провести более эффективно и структурированно');
+    }
+
+    if (analysis.gaps.conflictResolution > 10) {
+      missed.push('Некоторые конфликтные моменты можно было разрешить лучше');
+    }
+
+    if (!analysis.passedScenario) {
+      missed.push('Сценарий не пройден - необходимо улучшить общий подход к общению');
+    }
+
+    return missed;
+  }
 }

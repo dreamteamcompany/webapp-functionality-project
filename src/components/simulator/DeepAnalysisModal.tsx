@@ -15,7 +15,20 @@ interface DeepAnalysisModalProps {
 export default function DeepAnalysisModal({ open, onClose, analysis }: DeepAnalysisModalProps) {
   if (!analysis) return null;
 
-  const { patientBehaviorModel, conversationScenarios, deepInsights } = analysis;
+  const { 
+    patientBehaviorModel = {
+      trustLevel: 0,
+      cooperationLevel: 0,
+      anxietyLevel: 0,
+      informationAbsorption: 0,
+      decisionReadiness: 0,
+      primaryConcerns: [],
+      unresolvedDouBts: [],
+      emotionalTriggers: []
+    }, 
+    conversationScenarios = [], 
+    deepInsights = [] 
+  } = analysis;
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-600';
