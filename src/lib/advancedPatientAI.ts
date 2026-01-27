@@ -14,6 +14,42 @@ export interface ConversationAnalysis {
   recommendations: string[];
   goodPoints: string[];
   missedOpportunities: string[];
+  patientBehaviorModel: PatientBehaviorModel;
+  conversationScenarios: ConversationScenario[];
+  deepInsights: DeepInsight[];
+}
+
+export interface PatientBehaviorModel {
+  trustLevel: number;
+  cooperationLevel: number;
+  anxietyLevel: number;
+  informationAbsorption: number;
+  decisionReadiness: number;
+  primaryConcerns: string[];
+  unresolvedDouBts: string[];
+  emotionalTriggers: string[];
+}
+
+export interface ConversationScenario {
+  scenarioType: 'ideal' | 'actual' | 'alternative';
+  description: string;
+  keyMoments: KeyMoment[];
+  outcome: string;
+  patientResponse: string;
+}
+
+export interface KeyMoment {
+  turn: number;
+  what: string;
+  impact: 'positive' | 'negative' | 'neutral';
+  satisfactionChange: number;
+}
+
+export interface DeepInsight {
+  category: 'communication' | 'empathy' | 'professionalism' | 'clarity' | 'trust';
+  insight: string;
+  evidence: string[];
+  recommendation: string;
 }
 
 interface ConversationContext {
@@ -23,6 +59,11 @@ interface ConversationContext {
   questionsAsked: number;
   clarityLevel: number;
   lastUserSentiment: 'positive' | 'negative' | 'neutral';
+  keyMoments: KeyMoment[];
+  trustBuilding: number[];
+  anxietyLevels: number[];
+  adminMistakes: string[];
+  adminSuccesses: string[];
 }
 
 export class AdvancedPatientAI {
@@ -43,9 +84,26 @@ export class AdvancedPatientAI {
       empathyShown: 0,
       questionsAsked: 0,
       clarityLevel: 0,
-      lastUserSentiment: 'neutral'
+      lastUserSentiment: 'neutral',
+      keyMoments: [],
+      trustBuilding: [50],
+      anxietyLevels: [this.getAnxietyLevel(scenario.aiPersonality.emotionalState)],
+      adminMistakes: [],
+      adminSuccesses: []
     };
     this.initializeResponseVariations();
+  }
+
+  private getAnxietyLevel(emotionalState: string): number {
+    const anxietyMap: Record<string, number> = {
+      'scared': 90,
+      'anxious': 70,
+      'neutral': 50,
+      'trusting': 30,
+      'relieved': 20,
+      'satisfied': 10
+    };
+    return anxietyMap[emotionalState] || 50;
   }
 
   private initializeResponseVariations(): void {
@@ -570,13 +628,48 @@ export class AdvancedPatientAI {
 
     if (analysis.hasEmpathy) {
       this.context.empathyShown++;
+      this.trackKeyMoment('Проявлена эмпатия к пациенту', 'positive', 12);
+      this.context.adminSuccesses.push('Использовал эмпатию');
     }
 
     if (analysis.isSimple || !analysis.isTechnical) {
       this.context.clarityLevel++;
+      if (this.context.clarityLevel >= 2) {
+        this.trackKeyMoment('Объяснение простым языком', 'positive', 8);
+        this.context.adminSuccesses.push('Говорил понятно');
+      }
     } else if (analysis.isTechnical) {
       this.context.clarityLevel = Math.max(0, this.context.clarityLevel - 1);
+      this.trackKeyMoment('Использована сложная терминология', 'negative', -15);
+      this.context.adminMistakes.push('Медицинские термины без объяснения');
     }
+
+    if (analysis.hasQuestion && analysis.topics.includes('cost')) {
+      this.trackKeyMoment('Обсудили стоимость', 'positive', 5);
+    }
+
+    if (analysis.sentiment === 'negative') {
+      this.trackKeyMoment('Негативная реакция администратора', 'negative', -10);
+      this.context.adminMistakes.push('Холодный или негативный тон');
+    }
+  }
+
+  private trackKeyMoment(what: string, impact: 'positive' | 'negative' | 'neutral', satisfactionChange: number): void {
+    this.context.keyMoments.push({
+      turn: this.conversationHistory.length / 2,
+      what,
+      impact,
+      satisfactionChange
+    });
+
+    const currentTrust = this.context.trustBuilding[this.context.trustBuilding.length - 1];
+    const newTrust = Math.max(0, Math.min(100, currentTrust + satisfactionChange));
+    this.context.trustBuilding.push(newTrust);
+
+    const currentAnxiety = this.context.anxietyLevels[this.context.anxietyLevels.length - 1];
+    const anxietyChange = impact === 'positive' ? -5 : (impact === 'negative' ? 8 : 0);
+    const newAnxiety = Math.max(0, Math.min(100, currentAnxiety + anxietyChange));
+    this.context.anxietyLevels.push(newAnxiety);
   }
 
   private updateEmotionalState(analysis: any): void {
@@ -730,5 +823,308 @@ export class AdvancedPatientAI {
 
   getCurrentEmotionalState(): string {
     return this.currentEmotionalState;
+  }
+
+  private buildPatientBehaviorModel(): PatientBehaviorModel {
+    const trustLevel = this.context.trustBuilding[this.context.trustBuilding.length - 1];
+    const cooperationLevel = this.currentSatisfaction;
+    const anxietyLevel = this.context.anxietyLevels[this.context.anxietyLevels.length - 1];
+    const informationAbsorption = Math.min(100, this.context.clarityLevel * 20);
+    const decisionReadiness = trustLevel > 60 && anxietyLevel < 40 ? 80 : 40;
+
+    const primaryConcerns: string[] = [];
+    Array.from(this.context.topicsDiscussed).forEach(topic => {
+      if (topic === 'pain') primaryConcerns.push('Боль и дискомфорт');
+      if (topic === 'cost') primaryConcerns.push('Стоимость лечения');
+      if (topic === 'time') primaryConcerns.push('Длительность процедур');
+      if (topic === 'safety') primaryConcerns.push('Безопасность методов');
+    });
+
+    const unresolvedDouBts = this.context.adminMistakes.map(mistake => 
+      `Сомнение после: "${mistake}"`
+    );
+
+    const emotionalTriggers = this.context.keyMoments
+      .filter(m => m.impact === 'negative')
+      .map(m => m.what);
+
+    return {
+      trustLevel,
+      cooperationLevel,
+      anxietyLevel,
+      informationAbsorption,
+      decisionReadiness,
+      primaryConcerns,
+      unresolvedDouBts,
+      emotionalTriggers
+    };
+  }
+
+  private generateConversationScenarios(): ConversationScenario[] {
+    const scenarios: ConversationScenario[] = [];
+
+    scenarios.push({
+      scenarioType: 'actual',
+      description: 'Реальный сценарий разговора',
+      keyMoments: this.context.keyMoments,
+      outcome: this.getActualOutcome(),
+      patientResponse: this.getPatientFinalThought()
+    });
+
+    scenarios.push({
+      scenarioType: 'ideal',
+      description: 'Идеальный сценарий при правильных действиях',
+      keyMoments: this.generateIdealScenario(),
+      outcome: 'Пациент полностью доверяет, готов к лечению, все сомнения развеяны',
+      patientResponse: 'Спасибо, я всё понял и готов начать. Вы меня убедили!'
+    });
+
+    if (this.context.adminMistakes.length > 0) {
+      scenarios.push({
+        scenarioType: 'alternative',
+        description: 'Альтернативный подход без ошибок',
+        keyMoments: this.generateAlternativeScenario(),
+        outcome: 'Более быстрое достижение доверия',
+        patientResponse: 'Если бы так с самого начала, я бы сразу согласился'
+      });
+    }
+
+    return scenarios;
+  }
+
+  private getActualOutcome(): string {
+    if (this.currentSatisfaction >= 80) {
+      return 'Пациент доволен, доверяет администратору, готов к записи';
+    } else if (this.currentSatisfaction >= 60) {
+      return 'Пациент скорее удовлетворён, но остались небольшие сомнения';
+    } else if (this.currentSatisfaction >= 40) {
+      return 'Пациент не уверен, требуется дополнительное убеждение';
+    } else {
+      return 'Пациент разочарован, скорее всего откажется от записи';
+    }
+  }
+
+  private getPatientFinalThought(): string {
+    const anxiety = this.context.anxietyLevels[this.context.anxietyLevels.length - 1];
+    const trust = this.context.trustBuilding[this.context.trustBuilding.length - 1];
+
+    if (trust >= 80 && anxiety < 30) {
+      return 'Мне всё понятно, я доверяю этой клинике. Запишусь обязательно!';
+    } else if (trust >= 60) {
+      return 'Вроде всё неплохо объяснили, но хотелось бы ещё подумать...';
+    } else if (anxiety > 60) {
+      return 'Мне всё ещё страшно, не уверен, что готов...';
+    } else {
+      return 'Что-то не очень убедительно. Посмотрю другие клиники.';
+    }
+  }
+
+  private generateIdealScenario(): KeyMoment[] {
+    return [
+      {
+        turn: 1,
+        what: 'Администратор проявил эмпатию к переживаниям',
+        impact: 'positive',
+        satisfactionChange: 15
+      },
+      {
+        turn: 2,
+        what: 'Объяснил процедуру простым языком',
+        impact: 'positive',
+        satisfactionChange: 12
+      },
+      {
+        turn: 3,
+        what: 'Ответил на все вопросы про стоимость и время',
+        impact: 'positive',
+        satisfactionChange: 10
+      },
+      {
+        turn: 4,
+        what: 'Рассказал про опыт врача и отзывы',
+        impact: 'positive',
+        satisfactionChange: 10
+      },
+      {
+        turn: 5,
+        what: 'Предложил комфортные условия записи',
+        impact: 'positive',
+        satisfactionChange: 8
+      }
+    ];
+  }
+
+  private generateAlternativeScenario(): KeyMoment[] {
+    const mistakes = this.context.adminMistakes;
+    return mistakes.map((mistake, index) => ({
+      turn: index + 1,
+      what: `Исправить: ${mistake}`,
+      impact: 'positive' as const,
+      satisfactionChange: 10
+    }));
+  }
+
+  private generateDeepInsights(): DeepInsight[] {
+    const insights: DeepInsight[] = [];
+
+    if (this.context.empathyShown < 2) {
+      insights.push({
+        category: 'empathy',
+        insight: 'Недостаточно эмпатии в общении',
+        evidence: [
+          `Эмпатия проявлена ${this.context.empathyShown} раз(а)`,
+          'Пациент чувствует, что его переживания игнорируют'
+        ],
+        recommendation: 'Используйте фразы: "Я понимаю ваше беспокойство", "Многие пациенты чувствуют то же самое"'
+      });
+    }
+
+    if (this.context.clarityLevel <= 1) {
+      insights.push({
+        category: 'clarity',
+        insight: 'Слишком сложные объяснения для пациента',
+        evidence: [
+          'Использовалась профессиональная терминология',
+          `Уровень понимания: ${this.context.clarityLevel}/5`
+        ],
+        recommendation: 'Объясняйте как другу, без медицинских терминов. Приводите примеры из жизни.'
+      });
+    }
+
+    const trustChange = this.context.trustBuilding[this.context.trustBuilding.length - 1] - this.context.trustBuilding[0];
+    if (trustChange < 20) {
+      insights.push({
+        category: 'trust',
+        insight: 'Доверие пациента выросло недостаточно',
+        evidence: [
+          `Рост доверия: ${trustChange} пунктов`,
+          'Пациент не чувствует уверенности в клинике'
+        ],
+        recommendation: 'Расскажите о достижениях врача, покажите сертификаты, упомяните отзывы'
+      });
+    }
+
+    if (this.context.adminSuccesses.length > 3) {
+      insights.push({
+        category: 'professionalism',
+        insight: 'Отличная коммуникация! Пациент чувствует профессионализм',
+        evidence: this.context.adminSuccesses,
+        recommendation: 'Продолжайте в том же духе! Ваш подход работает.'
+      });
+    }
+
+    if (this.context.questionsAsked < 2 && this.conversationHistory.length > 6) {
+      insights.push({
+        category: 'communication',
+        insight: 'Мало вопросов к пациенту',
+        evidence: [
+          `Задано вопросов: ${this.context.questionsAsked}`,
+          'Монолог вместо диалога'
+        ],
+        recommendation: 'Задавайте открытые вопросы: "Что вас больше всего беспокоит?", "Расскажите подробнее"'
+      });
+    }
+
+    return insights;
+  }
+
+  analyzeConversation(): ConversationAnalysis {
+    const { objectives = [], context } = this.scenario;
+    
+    let alignmentScore = 0;
+    const communicationScore = this.currentSatisfaction;
+    let goalProgressScore = 0;
+
+    const userMessages = this.conversationHistory.filter(m => m.role === 'user');
+    
+    if (context.goal) {
+      const goalKeywords = context.goal.toLowerCase().split(' ').filter(w => w.length > 3);
+      const mentioned = userMessages.some(m => 
+        goalKeywords.some(kw => m.content.toLowerCase().includes(kw))
+      );
+      alignmentScore += mentioned ? 50 : 0;
+    }
+
+    if (objectives.length > 0) {
+      const metObjectives = objectives.filter(obj => {
+        const objKeywords = obj.toLowerCase().split(' ').filter(w => w.length > 3);
+        return userMessages.some(m => 
+          objKeywords.some(kw => m.content.toLowerCase().includes(kw))
+        );
+      });
+      goalProgressScore = (metObjectives.length / objectives.length) * 100;
+    } else {
+      goalProgressScore = Math.min(this.conversationHistory.length * 10, 100);
+    }
+
+    if (this.context.empathyShown > 0) alignmentScore += 30;
+    if (this.context.clarityLevel > 2) alignmentScore += 20;
+
+    const recommendations: string[] = [];
+    const goodPoints: string[] = [];
+    const missedOpportunities: string[] = [];
+
+    if (this.currentSatisfaction >= 70) {
+      goodPoints.push('Успешно установлен контакт с пациентом');
+    } else if (this.currentSatisfaction < 40) {
+      recommendations.push('Проявляйте больше эмпатии и внимания к пациенту');
+      missedOpportunities.push('Недостаточно внимания к эмоциям пациента');
+    }
+
+    if (this.context.empathyShown >= 2) {
+      goodPoints.push('Проявили эмпатию и понимание');
+    } else if (this.context.empathyShown === 0) {
+      recommendations.push('Используйте фразы "Я понимаю ваши переживания", "Не волнуйтесь"');
+      missedOpportunities.push('Не проявили эмпатию');
+    }
+
+    if (this.context.clarityLevel >= 3) {
+      goodPoints.push('Объясняли простым языком');
+    } else if (this.context.clarityLevel <= 0) {
+      recommendations.push('Избегайте медицинских терминов, объясняйте проще');
+      missedOpportunities.push('Использовали сложную терминологию');
+    }
+
+    if (this.conversationHistory.length >= 7) {
+      goodPoints.push(`Провели подробную беседу (${this.conversationHistory.length / 2} сообщений)`);
+    } else if (this.conversationHistory.length < 4) {
+      recommendations.push('Продлите разговор, задайте больше вопросов');
+    }
+
+    if (goalProgressScore < 50) {
+      missedOpportunities.push(`Цель "${context.goal}" не достигнута`);
+      recommendations.push('Направьте беседу к достижению основной цели');
+    } else if (goalProgressScore >= 80) {
+      goodPoints.push('Отлично! Цель разговора достигнута');
+    }
+
+    const emotionalProgress = this.context.emotionalJourney;
+    if (emotionalProgress.length > 1) {
+      const improved = 
+        (emotionalProgress[0] === 'scared' && emotionalProgress[emotionalProgress.length - 1] === 'calm') ||
+        (emotionalProgress[0] === 'nervous' && emotionalProgress[emotionalProgress.length - 1] === 'calm') ||
+        (emotionalProgress[0] === 'angry' && emotionalProgress[emotionalProgress.length - 1] !== 'angry');
+      
+      if (improved) {
+        goodPoints.push('Успешно улучшили эмоциональное состояние пациента');
+      }
+    }
+
+    const overallScore = Math.round(
+      (alignmentScore * 0.3 + communicationScore * 0.4 + goalProgressScore * 0.3)
+    );
+
+    return {
+      alignmentScore: Math.round(alignmentScore),
+      communicationScore: Math.round(communicationScore),
+      goalProgressScore: Math.round(goalProgressScore),
+      overallScore,
+      recommendations,
+      goodPoints,
+      missedOpportunities,
+      patientBehaviorModel: this.buildPatientBehaviorModel(),
+      conversationScenarios: this.generateConversationScenarios(),
+      deepInsights: this.generateDeepInsights()
+    };
   }
 }

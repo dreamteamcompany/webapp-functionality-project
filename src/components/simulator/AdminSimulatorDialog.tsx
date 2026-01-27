@@ -9,6 +9,8 @@ import { AdminSimulator, SIMULATOR_SCENARIOS, DialogueChoice } from '@/lib/admin
 import { achievementSystem, SIMULATOR_ACHIEVEMENTS, UnlockedAchievement } from '@/lib/simulatorAchievements';
 import AchievementNotification from './AchievementNotification';
 import AchievementsDialog from './AchievementsDialog';
+import DeepAnalysisModal from './DeepAnalysisModal';
+import { ConversationAnalysis } from '@/lib/advancedPatientAI';
 
 interface AdminSimulatorDialogProps {
   open: boolean;
@@ -24,6 +26,8 @@ export default function AdminSimulatorDialog({ open, onOpenChange }: AdminSimula
   const [showAchievements, setShowAchievements] = useState(false);
   const [currentNotification, setCurrentNotification] = useState<UnlockedAchievement | null>(null);
   const [forceUpdate, setForceUpdate] = useState(0);
+  const [showDeepAnalysis, setShowDeepAnalysis] = useState(false);
+  const [deepAnalysisData, setDeepAnalysisData] = useState<ConversationAnalysis | null>(null);
   const dialogueEndRef = useRef<HTMLDivElement>(null);
 
   // Показываем уведомления о новых достижениях по одному
@@ -386,6 +390,19 @@ export default function AdminSimulatorDialog({ open, onOpenChange }: AdminSimula
                       </Button>
                     </div>
                     <Button 
+                      onClick={() => {
+                        const analysis = simulator?.getAnalysis();
+                        if (analysis) {
+                          setDeepAnalysisData(analysis);
+                          setShowDeepAnalysis(true);
+                        }
+                      }}
+                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                    >
+                      <Icon name="Brain" size={16} className="mr-2" />
+                      Глубокий анализ диалога
+                    </Button>
+                    <Button 
                       onClick={() => setShowAchievements(true)} 
                       variant="outline" 
                       className="w-full border-purple-500/30 hover:border-purple-500/50"
@@ -480,6 +497,13 @@ export default function AdminSimulatorDialog({ open, onOpenChange }: AdminSimula
       <AchievementsDialog
         open={showAchievements}
         onClose={() => setShowAchievements(false)}
+      />
+
+      {/* Глубокий анализ */}
+      <DeepAnalysisModal
+        open={showDeepAnalysis}
+        onClose={() => setShowDeepAnalysis(false)}
+        analysis={deepAnalysisData}
       />
     </Dialog>
   );
