@@ -84,6 +84,9 @@ export class AdvancedPatientAI {
     this.currentEmotionalState = scenario.aiPersonality.emotionalState || 'neutral';
     this.sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
+    // Загружаем историю из localStorage
+    this.loadHistoryFromStorage();
+    
     // Инициализация системы контекстной памяти
     this.dialogueContext = new DialogueContextManager(this.sessionId, {
       concerns: scenario.aiPersonality.concerns || [],
@@ -116,6 +119,112 @@ export class AdvancedPatientAI {
       'satisfied': 10
     };
     return anxietyMap[emotionalState] || 50;
+  }
+
+  /**
+   * Сохранение истории диалога в localStorage
+   */
+  private saveHistoryToStorage(): void {
+    try {
+      const historyData = {
+        sessionId: this.sessionId,
+        conversationHistory: this.conversationHistory,
+        currentSatisfaction: this.currentSatisfaction,
+        currentEmotionalState: this.currentEmotionalState,
+        context: {
+          topicsDiscussed: Array.from(this.context.topicsDiscussed),
+          emotionalJourney: this.context.emotionalJourney,
+          empathyShown: this.context.empathyShown,
+          questionsAsked: this.context.questionsAsked,
+          clarityLevel: this.context.clarityLevel,
+          lastUserSentiment: this.context.lastUserSentiment,
+          keyMoments: this.context.keyMoments,
+          trustBuilding: this.context.trustBuilding,
+          anxietyLevels: this.context.anxietyLevels,
+          adminMistakes: this.context.adminMistakes,
+          adminSuccesses: this.context.adminSuccesses
+        },
+        timestamp: Date.now()
+      };
+      localStorage.setItem('history', JSON.stringify(historyData));
+    } catch (error) {
+      console.warn('Failed to save history to localStorage:', error);
+    }
+  }
+
+  /**
+   * Загрузка истории диалога из localStorage
+   */
+  private loadHistoryFromStorage(): void {
+    try {
+      const stored = localStorage.getItem('history');
+      if (!stored) return;
+
+      const historyData = JSON.parse(stored);
+      
+      // Проверяем, не устарела ли история (старше 24 часов)
+      const age = Date.now() - (historyData.timestamp || 0);
+      if (age > 24 * 60 * 60 * 1000) {
+        // История устарела, очищаем
+        localStorage.removeItem('history');
+        return;
+      }
+
+      // Восстанавливаем состояние
+      if (historyData.conversationHistory) {
+        this.conversationHistory = historyData.conversationHistory;
+      }
+      if (historyData.currentSatisfaction !== undefined) {
+        this.currentSatisfaction = historyData.currentSatisfaction;
+      }
+      if (historyData.currentEmotionalState) {
+        this.currentEmotionalState = historyData.currentEmotionalState;
+      }
+      if (historyData.context) {
+        this.context = {
+          topicsDiscussed: new Set(historyData.context.topicsDiscussed || []),
+          emotionalJourney: historyData.context.emotionalJourney || [],
+          empathyShown: historyData.context.empathyShown || 0,
+          questionsAsked: historyData.context.questionsAsked || 0,
+          clarityLevel: historyData.context.clarityLevel || 0,
+          lastUserSentiment: historyData.context.lastUserSentiment || 'neutral',
+          keyMoments: historyData.context.keyMoments || [],
+          trustBuilding: historyData.context.trustBuilding || [50],
+          anxietyLevels: historyData.context.anxietyLevels || [50],
+          adminMistakes: historyData.context.adminMistakes || [],
+          adminSuccesses: historyData.context.adminSuccesses || []
+        };
+      }
+    } catch (error) {
+      console.warn('Failed to load history from localStorage:', error);
+    }
+  }
+
+  /**
+   * Очистка истории из localStorage
+   */
+  clearHistory(): void {
+    try {
+      localStorage.removeItem('history');
+      this.conversationHistory = [];
+      this.currentSatisfaction = 50;
+      this.currentEmotionalState = this.scenario.aiPersonality.emotionalState || 'neutral';
+      this.context = {
+        topicsDiscussed: new Set(),
+        emotionalJourney: [this.scenario.aiPersonality.emotionalState || 'neutral'],
+        empathyShown: 0,
+        questionsAsked: 0,
+        clarityLevel: 0,
+        lastUserSentiment: 'neutral',
+        keyMoments: [],
+        trustBuilding: [50],
+        anxietyLevels: [this.getAnxietyLevel(this.scenario.aiPersonality.emotionalState || 'neutral')],
+        adminMistakes: [],
+        adminSuccesses: []
+      };
+    } catch (error) {
+      console.warn('Failed to clear history:', error);
+    }
   }
 
   private initializeResponseVariations(): void {
@@ -461,6 +570,9 @@ export class AdvancedPatientAI {
       trustDelta, 
       this.currentEmotionalState
     );
+
+    // Сохраняем всю историю в localStorage
+    this.saveHistoryToStorage();
 
     return {
       message: responseText,

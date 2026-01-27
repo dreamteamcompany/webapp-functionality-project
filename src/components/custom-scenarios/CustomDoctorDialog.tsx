@@ -27,14 +27,27 @@ export default function CustomDoctorDialog({ scenario, open, onClose }: CustomDo
   const [showDeepAnalysis, setShowDeepAnalysis] = useState(false);
   const [isConversationEnded, setIsConversationEnded] = useState(false);
   const [showDebugContext, setShowDebugContext] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (scenario && open) {
       const newAi = new AdvancedPatientAI(scenario);
       setAi(newAi);
-      const greeting = newAi.getGreeting();
-      setMessages([{ role: 'ai', content: greeting }]);
+      
+      // Проверяем, есть ли загруженная история
+      const history = newAi.getConversationHistory();
+      if (history && history.length > 0) {
+        // История загружена из localStorage, восстанавливаем сообщения
+        setMessages(history);
+        setHistoryLoaded(true);
+      } else {
+        // Новый диалог, показываем приветствие
+        const greeting = newAi.getGreeting();
+        setMessages([{ role: 'ai', content: greeting }]);
+        setHistoryLoaded(false);
+      }
+      
       setAnalysis(null);
       setShowAnalysis(false);
       setIsConversationEnded(false);
@@ -81,6 +94,17 @@ export default function CustomDoctorDialog({ scenario, open, onClose }: CustomDo
     setIsConversationEnded(false);
     setAi(null);
     onClose();
+  };
+
+  const handleClearHistory = () => {
+    if (!ai) return;
+    ai.clearHistory();
+    const greeting = ai.getGreeting();
+    setMessages([{ role: 'ai', content: greeting }]);
+    setIsConversationEnded(false);
+    setAnalysis(null);
+    setShowAnalysis(false);
+    setHistoryLoaded(false);
   };
 
   if (!scenario) return null;
@@ -294,9 +318,22 @@ export default function CustomDoctorDialog({ scenario, open, onClose }: CustomDo
                   <DialogTitle className="text-xl">{scenario.name}</DialogTitle>
                   <DialogDescription>{scenario.context.role}</DialogDescription>
                 </div>
-                <Button variant="ghost" size="icon" onClick={handleClose}>
-                  <Icon name="X" size={20} />
-                </Button>
+                <div className="flex gap-2">
+                  {messages.length > 1 && !isConversationEnded && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleClearHistory}
+                      className="gap-2"
+                    >
+                      <Icon name="RotateCcw" size={14} />
+                      Начать заново
+                    </Button>
+                  )}
+                  <Button variant="ghost" size="icon" onClick={handleClose}>
+                    <Icon name="X" size={20} />
+                  </Button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -341,6 +378,14 @@ export default function CustomDoctorDialog({ scenario, open, onClose }: CustomDo
             </DialogHeader>
 
             <div className="flex-1 flex flex-col overflow-hidden">
+              {historyLoaded && (
+                <div className="px-4 pt-3 pb-2 bg-purple-50 border-b border-purple-200">
+                  <div className="flex items-center gap-2 text-sm text-purple-700">
+                    <Icon name="History" size={16} />
+                    <span className="font-medium">Загружена история предыдущего диалога</span>
+                  </div>
+                </div>
+              )}
               <div className="p-4 bg-blue-50 border-b">
                 <div className="flex items-start gap-3 text-sm">
                   <Icon name="Info" size={20} className="text-blue-600 mt-0.5 flex-shrink-0" />
