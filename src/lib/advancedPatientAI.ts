@@ -2132,6 +2132,13 @@ export class AdvancedPatientAI {
     return insights;
   }
 
+  /**
+   * Получить глубокий анализ диалога (алиас для analyzeConversation)
+   */
+  getAnalysis(): ConversationAnalysis {
+    return this.analyzeConversation();
+  }
+
   analyzeConversation(): ConversationAnalysis {
     const { objectives = [], context } = this.scenario;
     
