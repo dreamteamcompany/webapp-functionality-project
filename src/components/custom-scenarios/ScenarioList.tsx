@@ -61,8 +61,8 @@ export default function ScenarioList({ onEdit, onPlay, onCreateNew, onRefresh }:
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="h-full flex flex-col space-y-6">
+      <div className="flex items-center justify-between flex-shrink-0">
         <div className="flex-1 max-w-md">
           <div className="relative">
             <Icon name="Search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -95,8 +95,9 @@ export default function ScenarioList({ onEdit, onPlay, onCreateNew, onRefresh }:
           </Button>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredScenarios.map(scenario => (
+        <div className="flex-1 overflow-y-auto pr-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
+            {filteredScenarios.map(scenario => (
             <Card key={scenario.id} className="p-6 hover:shadow-lg transition-shadow">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
@@ -164,6 +165,7 @@ export default function ScenarioList({ onEdit, onPlay, onCreateNew, onRefresh }:
               </Button>
             </Card>
           ))}
+          </div>
         </div>
       )}
 
