@@ -16,6 +16,23 @@ export interface ConversationAnalysis {
   missedOpportunities: string[];
 }
 
+interface AdminMessageAnalysis {
+  hasEmpathy: boolean;
+  empathyLevel: number;
+  hasQuestion: boolean;
+  questionType: string | null;
+  isDetailed: boolean;
+  providesSpecifics: boolean;
+  usesSimpleLanguage: boolean;
+  usesMedicalTerms: boolean;
+  topics: string[];
+  addressesConcerns: string[];
+  sentiment: 'positive' | 'negative' | 'neutral';
+  offersAction: boolean;
+  wordCount: number;
+  isTooShort: boolean;
+}
+
 interface DialogueContext {
   stage: 'initial' | 'exploration' | 'negotiation' | 'closing';
   discussedTopics: Set<string>;
@@ -39,9 +56,7 @@ export class CustomAI {
   private conversationHistory: Array<{ role: 'user' | 'ai', content: string }> = [];
   private currentSatisfaction = 50;
   private messageCount = 0;
-  private objectivesMet: string[] = [];
   private currentEmotionalState: string;
-  private readonly maxMessages = 15;
   private context: DialogueContext;
   private usedPhrases: Set<string> = new Set();
 
@@ -95,7 +110,7 @@ export class CustomAI {
     return response;
   }
 
-  private analyzeAdminMessage(message: string) {
+  private analyzeAdminMessage(message: string): AdminMessageAnalysis {
     const lower = message.toLowerCase();
     const words = message.split(/\s+/).filter(w => w.length > 2);
 
@@ -213,12 +228,12 @@ export class CustomAI {
 
   private detectAddressedConcerns(text: string): string[] {
     const addressed: string[] = [];
-    const concerns = this.scenario.aiPersonality.concerns || [];
+    const challenges = this.scenario.challenges || [];
     
-    for (const concern of concerns) {
-      const concernWords = concern.toLowerCase().split(' ').filter(w => w.length > 3);
-      if (concernWords.some(word => text.includes(word))) {
-        addressed.push(concern);
+    for (const challenge of challenges) {
+      const challengeWords = challenge.toLowerCase().split(' ').filter(w => w.length > 3);
+      if (challengeWords.some(word => text.includes(word))) {
+        addressed.push(challenge);
       }
     }
     
@@ -245,7 +260,7 @@ export class CustomAI {
     return actionPhrases.some(phrase => text.includes(phrase));
   }
 
-  private updateDialogueContext(analysis: any) {
+  private updateDialogueContext(analysis: AdminMessageAnalysis): void {
     // Обновление подхода администратора
     if (analysis.hasEmpathy) this.context.adminApproach.showsEmpathy = true;
     if (analysis.hasQuestion) this.context.adminApproach.asksQuestions = true;
@@ -253,17 +268,17 @@ export class CustomAI {
     if (analysis.usesSimpleLanguage) this.context.adminApproach.usesSimpleLanguage = true;
 
     // Добавление обсужденных тем
-    analysis.topics.forEach((topic: string) => this.context.discussedTopics.add(topic));
+    analysis.topics.forEach(topic => this.context.discussedTopics.add(topic));
 
     // Определение стадии диалога
     if (this.messageCount <= 2) {
       this.context.stage = 'initial';
     } else if (this.messageCount <= 6) {
       this.context.stage = 'exploration';
-    } else if (this.currentSatisfaction >= 60) {
-      this.context.stage = 'negotiation';
-    } else if (this.messageCount >= 10 || this.currentSatisfaction >= 80) {
+    } else if (this.currentSatisfaction >= 80 || (this.messageCount >= 10 && this.currentSatisfaction >= 70)) {
       this.context.stage = 'closing';
+    } else if (this.currentSatisfaction >= 60 || this.messageCount > 6) {
+      this.context.stage = 'negotiation';
     }
 
     // Обновление потребностей пациента
@@ -281,7 +296,7 @@ export class CustomAI {
     }
   }
 
-  private createContextualResponse(userMessage: string, analysis: any): AIResponse {
+  private createContextualResponse(userMessage: string, analysis: AdminMessageAnalysis): AIResponse {
     let satisfaction = this.currentSatisfaction;
     let emotionalState = this.currentEmotionalState;
 
@@ -330,7 +345,7 @@ export class CustomAI {
     };
   }
 
-  private calculateSatisfactionDelta(analysis: any): number {
+  private calculateSatisfactionDelta(analysis: AdminMessageAnalysis): number {
     let delta = 0;
 
     // Позитивные факторы
@@ -351,7 +366,7 @@ export class CustomAI {
     return delta;
   }
 
-  private updateEmotionalState(analysis: any, satisfaction: number): string {
+  private updateEmotionalState(analysis: AdminMessageAnalysis, satisfaction: number): string {
     let newState = this.currentEmotionalState;
 
     // Позитивные переходы
@@ -383,7 +398,7 @@ export class CustomAI {
     return newState;
   }
 
-  private generateReaction(analysis: any, emotionalState: string): string | null {
+  private generateReaction(analysis: AdminMessageAnalysis, emotionalState: string): string | null {
     // Реакция на отличный ответ
     if (analysis.empathyLevel >= 15 && analysis.isDetailed) {
       return this.selectUnused([
@@ -450,8 +465,8 @@ export class CustomAI {
 
     // Ответ на вопрос об опасениях
     if (questionType === 'concern') {
-      const concerns = this.scenario.aiPersonality.concerns || ['общие опасения'];
-      const mainConcern = concerns[0];
+      const challenges = this.scenario.challenges || [];
+      const mainConcern = challenges.length > 0 ? challenges[0] : 'общая ситуация';
       return `Больше всего меня беспокоит ${mainConcern.toLowerCase()}. Это можно как-то решить?`;
     }
 
@@ -466,10 +481,13 @@ export class CustomAI {
     return null;
   }
 
-  private generateTopicComment(topics: string[], analysis: any): string | null {
+  private generateTopicComment(topics: string[], analysis: AdminMessageAnalysis): string | null {
     const topic = topics[0];
-    const isFirstTime = !this.context.discussedTopics.has(topic) || 
-                        Array.from(this.context.discussedTopics).filter(t => t === topic).length === 1;
+    const isFirstTime = this.context.discussedTopics.has(topic) && 
+                        this.conversationHistory.filter(m => 
+                          m.role === 'user' && 
+                          this.extractTopics(m.content.toLowerCase()).includes(topic)
+                        ).length === 1;
 
     if (topic === 'cost' && analysis.providesSpecifics) {
       return this.selectUnused([
@@ -506,7 +524,7 @@ export class CustomAI {
     return null;
   }
 
-  private generateFollowUp(analysis: any, emotionalState: string): string | null {
+  private generateFollowUp(analysis: AdminMessageAnalysis, emotionalState: string): string | null {
     // Если администратор предложил действие и удовлетворённость высокая
     if (analysis.offersAction && this.currentSatisfaction >= 70) {
       return this.selectUnused([
