@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -101,8 +102,9 @@ export default function ScenarioList({ onEdit, onPlay, onCreateNew }: ScenarioLi
           </Button>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredScenarios.map(scenario => (
+        <ScrollArea className="h-[calc(100vh-20rem)]">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pr-4">
+            {filteredScenarios.map(scenario => (
             <Card key={scenario.id} className="p-6 hover:shadow-lg transition-shadow">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
@@ -174,8 +176,9 @@ export default function ScenarioList({ onEdit, onPlay, onCreateNew }: ScenarioLi
                 Начать тренировку
               </Button>
             </Card>
-          ))}
-        </div>
+            ))}
+          </div>
+        </ScrollArea>
       )}
 
       <AlertDialog open={deleteDialog !== null} onOpenChange={() => setDeleteDialog(null)}>

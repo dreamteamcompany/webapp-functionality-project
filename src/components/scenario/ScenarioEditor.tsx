@@ -14,6 +14,7 @@ import {
 import { Card } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ScenarioEditorProps {
   scenario?: CustomScenario;
@@ -137,7 +138,8 @@ export default function ScenarioEditor({ scenario, onSave, onCancel }: ScenarioE
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid gap-6">
+      <ScrollArea className="h-[calc(90vh-8rem)] pr-4">
+        <div className="grid gap-6">
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <Icon name="FileText" size={20} />
@@ -356,16 +358,20 @@ export default function ScenarioEditor({ scenario, onSave, onCancel }: ScenarioE
                   <Icon name="Plus" size={16} />
                 </Button>
               </div>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {formData.objectives?.map((obj, i) => (
-                  <Badge key={i} variant="secondary" className="gap-1">
-                    {obj}
-                    <button type="button" onClick={() => removeObjective(i)}>
-                      <Icon name="X" size={12} />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
+              {formData.objectives && formData.objectives.length > 0 && (
+                <ScrollArea className="max-h-32 mt-2">
+                  <div className="flex flex-wrap gap-2 pr-4">
+                    {formData.objectives.map((obj, i) => (
+                      <Badge key={i} variant="secondary" className="gap-1">
+                        {obj}
+                        <button type="button" onClick={() => removeObjective(i)}>
+                          <Icon name="X" size={12} />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
             </div>
 
             <div>
@@ -381,16 +387,20 @@ export default function ScenarioEditor({ scenario, onSave, onCancel }: ScenarioE
                   <Icon name="Plus" size={16} />
                 </Button>
               </div>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {formData.challenges?.map((ch, i) => (
-                  <Badge key={i} variant="destructive" className="gap-1">
-                    {ch}
-                    <button type="button" onClick={() => removeChallenge(i)}>
-                      <Icon name="X" size={12} />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
+              {formData.challenges && formData.challenges.length > 0 && (
+                <ScrollArea className="max-h-32 mt-2">
+                  <div className="flex flex-wrap gap-2 pr-4">
+                    {formData.challenges.map((ch, i) => (
+                      <Badge key={i} variant="destructive" className="gap-1">
+                        {ch}
+                        <button type="button" onClick={() => removeChallenge(i)}>
+                          <Icon name="X" size={12} />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
             </div>
           </div>
         </Card>
@@ -424,49 +434,51 @@ export default function ScenarioEditor({ scenario, onSave, onCancel }: ScenarioE
               </Button>
             </div>
 
-            <div className="space-y-3">
-              <div>
-                <Label className="text-green-600">Позитивные ответы</Label>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {formData.responsePatterns?.positive?.map((p, i) => (
-                    <Badge key={i} variant="outline" className="gap-1 border-green-600 text-green-600">
-                      {p}
-                      <button type="button" onClick={() => removePattern('positive', i)}>
-                        <Icon name="X" size={12} />
-                      </button>
-                    </Badge>
-                  ))}
+            <ScrollArea className="max-h-64">
+              <div className="space-y-3 pr-4">
+                <div>
+                  <Label className="text-green-600">Позитивные ответы</Label>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {formData.responsePatterns?.positive?.map((p, i) => (
+                      <Badge key={i} variant="outline" className="gap-1 border-green-600 text-green-600">
+                        {p}
+                        <button type="button" onClick={() => removePattern('positive', i)}>
+                          <Icon name="X" size={12} />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <Label className="text-red-600">Негативные ответы</Label>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {formData.responsePatterns?.negative?.map((p, i) => (
-                    <Badge key={i} variant="outline" className="gap-1 border-red-600 text-red-600">
-                      {p}
-                      <button type="button" onClick={() => removePattern('negative', i)}>
-                        <Icon name="X" size={12} />
-                      </button>
-                    </Badge>
-                  ))}
+                <div>
+                  <Label className="text-red-600">Негативные ответы</Label>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {formData.responsePatterns?.negative?.map((p, i) => (
+                      <Badge key={i} variant="outline" className="gap-1 border-red-600 text-red-600">
+                        {p}
+                        <button type="button" onClick={() => removePattern('negative', i)}>
+                          <Icon name="X" size={12} />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <Label className="text-gray-600">Нейтральные ответы</Label>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {formData.responsePatterns?.neutral?.map((p, i) => (
-                    <Badge key={i} variant="outline" className="gap-1">
-                      {p}
-                      <button type="button" onClick={() => removePattern('neutral', i)}>
-                        <Icon name="X" size={12} />
-                      </button>
-                    </Badge>
-                  ))}
+                <div>
+                  <Label className="text-gray-600">Нейтральные ответы</Label>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {formData.responsePatterns?.neutral?.map((p, i) => (
+                      <Badge key={i} variant="outline" className="gap-1">
+                        {p}
+                        <button type="button" onClick={() => removePattern('neutral', i)}>
+                          <Icon name="X" size={12} />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
+            </ScrollArea>
           </div>
         </Card>
 
@@ -487,18 +499,23 @@ export default function ScenarioEditor({ scenario, onSave, onCancel }: ScenarioE
               <Icon name="Plus" size={16} />
             </Button>
           </div>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {formData.tags?.map((tag, i) => (
-              <Badge key={i} className="gap-1">
-                {tag}
-                <button type="button" onClick={() => removeTag(i)}>
-                  <Icon name="X" size={12} />
-                </button>
-              </Badge>
-            ))}
-          </div>
+          {formData.tags && formData.tags.length > 0 && (
+            <ScrollArea className="max-h-24 mt-2">
+              <div className="flex flex-wrap gap-2 pr-4">
+                {formData.tags.map((tag, i) => (
+                  <Badge key={i} className="gap-1">
+                    {tag}
+                    <button type="button" onClick={() => removeTag(i)}>
+                      <Icon name="X" size={12} />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            </ScrollArea>
+          )}
         </Card>
-      </div>
+        </div>
+      </ScrollArea>
 
       <div className="flex gap-2 justify-end sticky bottom-4 bg-background p-4 border rounded-lg shadow-lg">
         <Button type="button" variant="outline" onClick={onCancel}>
