@@ -1,3 +1,32 @@
+export interface SimulatorAnalysis {
+  finalScore: number;
+  parameters: {
+    empathy: number;
+    professionalism: number;
+    efficiency: number;
+    salesSkill: number;
+    conflictResolution: number;
+  };
+  targetParameters: {
+    empathy: number;
+    professionalism: number;
+    efficiency: number;
+    salesSkill: number;
+    conflictResolution: number;
+  };
+  gaps: {
+    empathy: number;
+    professionalism: number;
+    efficiency: number;
+    salesSkill: number;
+    conflictResolution: number;
+  };
+  strengths: string[];
+  weaknesses: string[];
+  passedScenario: boolean;
+  totalSteps: number;
+}
+
 export interface SimulatorScenario {
   id: string;
   title: string;
@@ -3553,5 +3582,60 @@ export class AdminSimulator {
     const dialogueCount = Math.floor(this.state.dialogue.length / 2); // Делим на 2, т.к. каждый обмен = 2 реплики
     const maxDialogues = 20; // Примерно максимальное количество обменов
     return Math.min(100, (dialogueCount / maxDialogues) * 100);
+  }
+
+  private calculateFinalScore(): number {
+    const target = this.state.scenario.targetParameters;
+    const current = this.state.parameters;
+    
+    // Рассчитываем процент достижения целевых параметров
+    const empathyScore = Math.min(100, (current.empathy / target.empathy) * 100);
+    const professionalismScore = Math.min(100, (current.professionalism / target.professionalism) * 100);
+    const efficiencyScore = Math.min(100, (current.efficiency / target.efficiency) * 100);
+    const salesSkillScore = Math.min(100, (current.salesSkill / target.salesSkill) * 100);
+    const conflictResolutionScore = Math.min(100, (current.conflictResolution / target.conflictResolution) * 100);
+    
+    // Средний балл по всем параметрам
+    return Math.round(
+      (empathyScore + professionalismScore + efficiencyScore + salesSkillScore + conflictResolutionScore) / 5
+    );
+  }
+
+  getAnalysis(): SimulatorAnalysis {
+    const score = this.calculateFinalScore();
+    const target = this.state.scenario.targetParameters;
+    const current = this.state.parameters;
+    
+    // Calculate gaps for each parameter
+    const gaps = {
+      empathy: target.empathy - current.empathy,
+      professionalism: target.professionalism - current.professionalism,
+      efficiency: target.efficiency - current.efficiency,
+      salesSkill: target.salesSkill - current.salesSkill,
+      conflictResolution: target.conflictResolution - current.conflictResolution
+    };
+
+    // Find biggest gaps
+    const sortedGaps = Object.entries(gaps)
+      .sort(([, a], [, b]) => Math.abs(b) - Math.abs(a));
+
+    const strengths: string[] = [];
+    const weaknesses: string[] = [];
+
+    sortedGaps.forEach(([param, gap]) => {
+      if (gap <= -10) strengths.push(param);
+      if (gap >= 15) weaknesses.push(param);
+    });
+
+    return {
+      finalScore: score,
+      parameters: current,
+      targetParameters: target,
+      gaps,
+      strengths,
+      weaknesses,
+      passedScenario: score >= 70,
+      totalSteps: this.state.currentStep
+    };
   }
 }
