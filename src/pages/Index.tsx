@@ -225,9 +225,6 @@ export default function Index() {
 
     const response = patientAIRef.current.generateResponse(message);
     setDoctorMessages(prev => [...prev, { role: 'patient', content: response.message }]);
-
-    const analysis = patientAIRef.current.analyzeConversation();
-    setConversationAnalysis(analysis);
   };
 
   const handleStartDoctorRecording = async () => {
@@ -289,11 +286,21 @@ export default function Index() {
   };
 
   const handleEndDoctorConversation = () => {
-    setDoctorDialog(false);
-    setDoctorMessages([]);
-    setDoctorInput('');
-    setConversationAnalysis(null);
+    if (!patientAIRef.current) return;
+    
+    const analysis = patientAIRef.current.analyzeConversation();
+    setConversationAnalysis(analysis);
     setLearningStatsKey(prev => prev + 1);
+  };
+
+  const handleCloseDoctorDialog = (open: boolean) => {
+    if (!open) {
+      setDoctorMessages([]);
+      setDoctorInput('');
+      setConversationAnalysis(null);
+      patientAIRef.current = null;
+    }
+    setDoctorDialog(open);
   };
 
   const handleStartTraining = (type: 'quiz' | 'voice' | 'doctor') => {
@@ -456,7 +463,7 @@ export default function Index() {
         doctorDialog={doctorDialog}
         onQuizDialogChange={setQuizDialog}
         onVoiceDialogChange={setVoiceDialog}
-        onDoctorDialogChange={setDoctorDialog}
+        onDoctorDialogChange={handleCloseDoctorDialog}
         currentQuizQuestion={currentQuizQuestion}
         quizAnswers={quizAnswers}
         quizScore={quizScore}
