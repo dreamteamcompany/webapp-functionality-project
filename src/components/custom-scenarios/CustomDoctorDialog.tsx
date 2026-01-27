@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import DeepAnalysisModal from '@/components/simulator/DeepAnalysisModal';
 
 interface CustomDoctorDialogProps {
   scenario: CustomScenario | null;
@@ -23,6 +24,8 @@ export default function CustomDoctorDialog({ scenario, open, onClose }: CustomDo
   const [isProcessing, setIsProcessing] = useState(false);
   const [analysis, setAnalysis] = useState<ConversationAnalysis | null>(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
+  const [showDeepAnalysis, setShowDeepAnalysis] = useState(false);
+  const [isConversationEnded, setIsConversationEnded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,6 +36,7 @@ export default function CustomDoctorDialog({ scenario, open, onClose }: CustomDo
       setMessages([{ role: 'ai', content: greeting }]);
       setAnalysis(null);
       setShowAnalysis(false);
+      setIsConversationEnded(false);
     }
   }, [scenario, open]);
 
@@ -43,7 +47,7 @@ export default function CustomDoctorDialog({ scenario, open, onClose }: CustomDo
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim() || isProcessing || !ai) return;
+    if (!input.trim() || isProcessing || !ai || isConversationEnded) return;
 
     const userMessage = input.trim();
     setInput('');
@@ -60,8 +64,9 @@ export default function CustomDoctorDialog({ scenario, open, onClose }: CustomDo
     }
   };
 
-  const handleAnalyze = () => {
+  const handleEndConversation = () => {
     if (!ai) return;
+    setIsConversationEnded(true);
     const result = ai.analyzeConversation();
     setAnalysis(result);
     setShowAnalysis(true);
@@ -72,6 +77,7 @@ export default function CustomDoctorDialog({ scenario, open, onClose }: CustomDo
     setInput('');
     setAnalysis(null);
     setShowAnalysis(false);
+    setIsConversationEnded(false);
     setAi(null);
     onClose();
   };
@@ -213,6 +219,13 @@ export default function CustomDoctorDialog({ scenario, open, onClose }: CustomDo
                     <Icon name="ArrowLeft" size={16} className="mr-2" />
                     Вернуться к диалогу
                   </Button>
+                  <Button 
+                    onClick={() => setShowDeepAnalysis(true)}
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                  >
+                    <Icon name="Brain" size={16} className="mr-2" />
+                    Глубокий анализ
+                  </Button>
                   <Button onClick={handleClose}>
                     Закрыть
                   </Button>
@@ -311,42 +324,72 @@ export default function CustomDoctorDialog({ scenario, open, onClose }: CustomDo
 
               <div className="border-t p-4 bg-background">
                 <div className="max-w-3xl mx-auto space-y-3">
-                  <div className="flex gap-2">
-                    <Textarea
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSend();
-                        }
-                      }}
-                      placeholder="Введите ваш ответ пациенту..."
-                      className="resize-none"
-                      rows={2}
-                    />
-                    <div className="flex flex-col gap-2">
-                      <Button onClick={handleSend} disabled={!input.trim() || isProcessing}>
-                        <Icon name="Send" size={18} />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={handleAnalyze}
-                        disabled={messages.length < 3}
-                      >
+                  {!isConversationEnded ? (
+                    <>
+                      <div className="flex gap-2">
+                        <Textarea
+                          value={input}
+                          onChange={(e) => setInput(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSend();
+                            }
+                          }}
+                          placeholder="Введите ваш ответ пациенту..."
+                          className="resize-none"
+                          rows={2}
+                        />
+                        <Button onClick={handleSend} disabled={!input.trim() || isProcessing}>
+                          <Icon name="Send" size={18} />
+                        </Button>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-muted-foreground">
+                          Enter - отправить • Shift+Enter - новая строка
+                        </p>
+                        {messages.length >= 6 && (
+                          <Button
+                            onClick={handleEndConversation}
+                            variant="default"
+                            size="sm"
+                            className="gap-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                          >
+                            <Icon name="CheckCircle2" size={16} />
+                            Завершить диалог и получить анализ
+                          </Button>
+                        )}
+                      </div>
+                      {messages.length >= 3 && messages.length < 6 && (
+                        <p className="text-xs text-center text-muted-foreground">
+                          Продолжайте диалог. Минимум {6 - messages.length} сообщений до завершения.
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-muted-foreground mb-4">
+                        Диалог завершён. Просмотрите анализ разговора.
+                      </p>
+                      <Button onClick={() => setShowAnalysis(true)} className="gap-2">
                         <Icon name="BarChart" size={18} />
+                        Показать анализ
                       </Button>
                     </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground text-center">
-                    Enter - отправить • Shift+Enter - новая строка
-                  </p>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         )}
       </DialogContent>
+
+      {/* Глубокий анализ диалога */}
+      <DeepAnalysisModal
+        open={showDeepAnalysis}
+        onClose={() => setShowDeepAnalysis(false)}
+        analysis={analysis}
+      />
     </Dialog>
   );
 }
