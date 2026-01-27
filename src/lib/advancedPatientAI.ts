@@ -1,4 +1,5 @@
 import { CustomScenario } from '@/types/customScenario';
+import { DialogueContextManager } from './dialogueContext';
 
 export interface AIResponse {
   message: string;
@@ -74,10 +75,20 @@ export class AdvancedPatientAI {
   private context: ConversationContext;
   private responseVariations: Map<string, string[]> = new Map();
   private usedPhrases: Set<string> = new Set();
+  private dialogueContext: DialogueContextManager;
+  private sessionId: string;
 
   constructor(scenario: CustomScenario) {
     this.scenario = scenario;
     this.currentEmotionalState = scenario.aiPersonality.emotionalState;
+    this.sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Инициализация системы контекстной памяти
+    this.dialogueContext = new DialogueContextManager(this.sessionId, {
+      concerns: scenario.aiPersonality.concerns,
+      emotionalState: scenario.aiPersonality.emotionalState
+    });
+    
     this.context = {
       topicsDiscussed: new Set(),
       emotionalJourney: [scenario.aiPersonality.emotionalState],
@@ -254,17 +265,37 @@ export class AdvancedPatientAI {
   }
 
   async getResponse(userMessage: string): Promise<AIResponse> {
+    // Добавляем сообщение администратора в контекстную память
+    this.dialogueContext.addAdminMessage(userMessage);
+    
     this.conversationHistory.push({ role: 'user', content: userMessage });
 
     const analysis = this.analyzeUserMessage(userMessage);
     this.updateContext(analysis);
 
-    const responseText = this.generateNaturalResponse(userMessage, analysis);
+    // Получаем контекст для генерации ответа
+    const responseContext = this.dialogueContext.getResponseContext();
+    
+    // Генерируем ответ на основе полного контекста диалога
+    const responseText = this.generateContextualResponse(userMessage, analysis, responseContext);
     
     this.conversationHistory.push({ role: 'ai', content: responseText });
+    
+    // Сохраняем ответ пациента в контекстную память
+    this.dialogueContext.addPatientMessage(responseText);
 
+    const satisfactionDelta = this.calculateSatisfactionChange(analysis);
+    const trustDelta = this.calculateTrustChange(analysis);
+    
     this.updateEmotionalState(analysis);
     this.updateSatisfaction(analysis);
+    
+    // Обновляем состояние пациента в контекстной памяти
+    this.dialogueContext.updatePatientState(
+      satisfactionDelta, 
+      trustDelta, 
+      this.currentEmotionalState
+    );
 
     return {
       message: responseText,
@@ -423,6 +454,215 @@ export class AdvancedPatientAI {
     }
 
     return parts.join(' ').trim();
+  }
+
+  /**
+   * Генерация ответа на основе полного контекста диалога из файла
+   * Учитывает историю, паттерны поведения админа и стратегию ответа
+   */
+  private generateContextualResponse(userMessage: string, analysis: any, responseContext: any): string {
+    const parts: string[] = [];
+    const messageCount = this.conversationHistory.length;
+
+    // Проверка на бессмысленный ответ
+    if (this.isNonsenseMessage(userMessage)) {
+      return this.generateNonsenseReaction();
+    }
+
+    // Проверка на слишком короткий ответ
+    if (userMessage.trim().length < 10 && messageCount > 1) {
+      return this.generateShortAnswerReaction();
+    }
+
+    // Анализ личности администратора из контекста
+    const adminProfile = responseContext.adminProfile;
+    const strategy = responseContext.strategy;
+    const phase = responseContext.phase;
+
+    // 1. РЕАКЦИЯ НА КАЧЕСТВО ОБЩЕНИЯ АДМИНИСТРАТОРА
+    if (adminProfile.empathyLevel > 70 && adminProfile.responsivenessLevel > 60) {
+      // Администратор очень внимателен и отзывчив
+      parts.push(this.selectUnusedFromArray([
+        'Спасибо, вы очень внимательны! Это правда важно для меня.',
+        'Я чувствую, что вы искренне хотите помочь. Это приятно.',
+        'Вы отлично меня понимаете, спасибо за такое отношение!'
+      ]));
+    } else if (adminProfile.empathyLevel < 30 && messageCount > 4) {
+      // Администратор холодный и формальный
+      parts.push(this.selectUnusedFromArray([
+        'Хм... Вы могли бы быть немного более... человечнее?',
+        'Мне кажется, вы не очень понимаете, как мне тревожно.',
+        'Я просто хочу, чтобы меня услышали, а не просто получили информацию.'
+      ]));
+    }
+
+    // 2. РЕАКЦИЯ НА ОСНОВЕ ФАЗЫ РАЗГОВОРА
+    if (phase === 'initial' && messageCount <= 2) {
+      // Начальная фаза - пациент осторожен
+      if (analysis.hasEmpathy) {
+        parts.push('Спасибо, что пытаетесь понять мою ситуацию.');
+      }
+      parts.push(this.generateInitialPhaseQuestion(responseContext.discussedTopics));
+    } else if (phase === 'exploration') {
+      // Фаза исследования - пациент активно задаёт вопросы
+      if (strategy.topicToExplore) {
+        parts.push(this.generateTopicQuestion(strategy.topicToExplore));
+      } else {
+        parts.push(this.generateFollowUpBasedOnHistory(responseContext.history));
+      }
+    } else if (phase === 'negotiation') {
+      // Фаза переговоров - пациент взвешивает решение
+      if (this.currentSatisfaction > 60) {
+        parts.push(this.selectUnusedFromArray([
+          'Знаете, я начинаю склоняться к тому, чтобы согласиться...',
+          'Вы меня почти убедили, но есть ещё пара моментов.',
+          'Хорошо, давайте обсудим детали записи.'
+        ]));
+      } else {
+        parts.push(this.selectUnusedFromArray([
+          'У меня всё ещё есть сомнения... Не уверен, что готов.',
+          'Что-то мне подсказывает, что надо ещё подумать.',
+          'Может, мне лучше посоветоваться с кем-то ещё?'
+        ]));
+      }
+    } else if (phase === 'decision') {
+      // Фаза решения - пациент готов
+      parts.push(this.generateReadyToBookResponse());
+    } else if (phase === 'closing') {
+      // Завершение - либо согласие, либо отказ
+      if (this.currentSatisfaction >= 70) {
+        return 'Отлично! Я готов записаться. Когда мне можно прийти?';
+      } else {
+        return 'Спасибо за информацию, но я пока не готов принять решение. Мне нужно время подумать.';
+      }
+    }
+
+    // 3. УЧЁТ НЕРЕШЁННЫХ ВОПРОСОВ
+    if (responseContext.unresolvedQuestions.length > 0 && Math.random() > 0.5) {
+      const unresolved = responseContext.unresolvedQuestions[0];
+      parts.push(`Кстати, я всё ещё жду ответа на мой вопрос: "${unresolved.substring(0, 80)}..."`);
+    }
+
+    // 4. РЕАКЦИЯ НА КОНКРЕТНЫЕ ТЕМЫ ИЗ СООБЩЕНИЯ
+    if (analysis.topics.includes('cost') && !responseContext.discussedTopics.includes('cost')) {
+      parts.push(this.selectUnusedFromArray([
+        'Хорошо, что вы затронули тему стоимости. Это важно для меня.',
+        'Спасибо, что сказали про цены. Мне нужно было это услышать.',
+        'А можно подробнее про оплату? Есть ли какие-то варианты?'
+      ]));
+    }
+
+    if (analysis.topics.includes('pain') && this.currentEmotionalState === 'scared') {
+      parts.push(this.selectUnusedFromArray([
+        'Да, боль - это то, чего я больше всего боюсь...',
+        'Вы уверены, что будет не больно? Мне правда страшно.',
+        'А что если анестезия не подействует? Такое бывает?'
+      ]));
+    }
+
+    // 5. СТРАТЕГИЧЕСКИЕ ЭЛЕМЕНТЫ ОТВЕТА
+    if (strategy.shouldShowGratitude && parts.length === 0) {
+      parts.push(this.selectUnusedFromArray([
+        'Спасибо за ваше терпение.',
+        'Благодарю за подробное объяснение.',
+        'Вы мне очень помогли разобраться.'
+      ]));
+    }
+
+    if (strategy.shouldAskQuestion && parts.length < 2) {
+      if (strategy.topicToExplore) {
+        parts.push(this.generateTopicQuestion(strategy.topicToExplore));
+      }
+    }
+
+    if (strategy.shouldChallenge) {
+      parts.push(this.selectUnusedFromArray([
+        'А вы уверены в этом? Я читал другую информацию...',
+        'Хм, а почему тогда в интернете пишут по-другому?',
+        'У меня есть сомнения насчёт этого подхода.'
+      ]));
+    }
+
+    // 6. ЕСЛИ НИЧЕГО НЕ СГЕНЕРИРОВАНО - БАЗОВЫЙ ОТВЕТ
+    if (parts.length === 0) {
+      parts.push(this.generateContextBasedResponse(analysis));
+    }
+
+    return parts.join(' ').trim();
+  }
+
+  /**
+   * Вопрос на начальной фазе диалога
+   */
+  private generateInitialPhaseQuestion(discussedTopics: string[]): string {
+    const possibleTopics = ['treatment', 'pain', 'cost'];
+    const notDiscussed = possibleTopics.filter(t => !discussedTopics.includes(t));
+    
+    if (notDiscussed.length > 0) {
+      return this.generateTopicQuestion(notDiscussed[0]);
+    }
+    
+    return 'Расскажите, пожалуйста, как это будет проходить?';
+  }
+
+  /**
+   * Генерация вопроса на основе истории диалога
+   */
+  private generateFollowUpBasedOnHistory(history: string[]): string {
+    const lastAdmin = history.filter(h => h.startsWith('Администратор')).slice(-1)[0];
+    
+    if (!lastAdmin) {
+      return 'Можете рассказать подробнее?';
+    }
+
+    // Если администратор упомянул конкретные детали - спросить про них
+    if (lastAdmin.includes('процедур') || lastAdmin.includes('лечен')) {
+      return this.selectUnusedFromArray([
+        'А сколько по времени займёт весь процесс?',
+        'Как часто нужно будет приходить на процедуры?',
+        'И когда можно ждать результата?'
+      ]);
+    }
+
+    if (lastAdmin.includes('стоимост') || lastAdmin.includes('цен')) {
+      return this.selectUnusedFromArray([
+        'А можно как-то в рассрочку оплатить?',
+        'Есть ли какие-то дополнительные расходы?',
+        'Это окончательная цена или будут ещё доплаты?'
+      ]);
+    }
+
+    return 'Понятно. А что дальше?';
+  }
+
+  /**
+   * Расчёт изменения удовлетворённости
+   */
+  private calculateSatisfactionChange(analysis: any): number {
+    let delta = 0;
+    
+    if (analysis.hasEmpathy) delta += 10;
+    if (analysis.hasQuestion) delta += 5;
+    if (analysis.isSimple) delta += 8;
+    if (analysis.sentiment === 'positive') delta += 5;
+    if (analysis.sentiment === 'negative') delta -= 10;
+    if (analysis.isTechnical) delta -= 15;
+    
+    return delta;
+  }
+
+  /**
+   * Расчёт изменения доверия
+   */
+  private calculateTrustChange(analysis: any): number {
+    let delta = 0;
+    
+    if (analysis.hasEmpathy) delta += 8;
+    if (analysis.hasQuestion) delta += 6;
+    if (analysis.topics.length > 2) delta += 10; // Администратор охватил много тем
+    if (analysis.sentiment === 'negative') delta -= 12;
+    
+    return delta;
   }
 
   private isNonsenseMessage(message: string): boolean {
@@ -1138,6 +1378,27 @@ export class AdvancedPatientAI {
 
   getCurrentEmotionalState(): string {
     return this.currentEmotionalState;
+  }
+
+  /**
+   * Получение полного контекста диалога для анализа
+   */
+  getDialogueContext() {
+    return this.dialogueContext.getFullContext();
+  }
+
+  /**
+   * Экспорт контекста диалога в JSON для отладки
+   */
+  exportDialogueContext(): string {
+    return this.dialogueContext.exportContext();
+  }
+
+  /**
+   * Очистка контекста диалога
+   */
+  clearDialogueContext(): void {
+    this.dialogueContext.clear();
   }
 
   private buildPatientBehaviorModel(): PatientBehaviorModel {

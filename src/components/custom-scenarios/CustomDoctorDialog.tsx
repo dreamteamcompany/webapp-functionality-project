@@ -26,6 +26,7 @@ export default function CustomDoctorDialog({ scenario, open, onClose }: CustomDo
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [showDeepAnalysis, setShowDeepAnalysis] = useState(false);
   const [isConversationEnded, setIsConversationEnded] = useState(false);
+  const [showDebugContext, setShowDebugContext] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
