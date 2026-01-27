@@ -77,6 +77,7 @@ export class AdvancedPatientAI {
   private usedPhrases: Set<string> = new Set();
   private dialogueContext: DialogueContextManager;
   private sessionId: string;
+  private randomObjectionChance = 0.25; // 25% шанс случайного возражения
 
   constructor(scenario: CustomScenario) {
     this.scenario = scenario;
@@ -649,13 +650,21 @@ export class AdvancedPatientAI {
       .map(m => m.content);
     const lastAdminMessage = lastAdminMessages[lastAdminMessages.length - 1] || '';
 
-    // 1. ЕСТЕСТВЕННАЯ ЭМОЦИОНАЛЬНАЯ РЕАКЦИЯ НА ПОВЕДЕНИЕ АДМИНИСТРАТОРА
+    // 1. СЛУЧАЙНЫЕ ВОЗРАЖЕНИЯ (как в продажах) - спонтанные сомнения без видимых причин
+    const randomObjection = this.generateRandomObjection(messageCount, adminProfile);
+    if (randomObjection) {
+      parts.push(randomObjection);
+      // Случайное возражение заменяет эмоциональную реакцию, чтобы не перегружать ответ
+      return parts.join(' ').trim();
+    }
+
+    // 2. ЕСТЕСТВЕННАЯ ЭМОЦИОНАЛЬНАЯ РЕАКЦИЯ НА ПОВЕДЕНИЕ АДМИНИСТРАТОРА
     const emotionalReaction = this.generateEmotionalReactionToAdmin(adminProfile, analysis, messageCount);
     if (emotionalReaction) {
       parts.push(emotionalReaction);
     }
 
-    // 2. РЕАКЦИЯ НА ОСНОВЕ ФАЗЫ РАЗГОВОРА
+    // 2a. РЕАКЦИЯ НА ОСНОВЕ ФАЗЫ РАЗГОВОРА
     if (phase === 'initial' && messageCount <= 2) {
       // Начальная фаза - пациент осторожен
       if (analysis.hasEmpathy) {
@@ -760,6 +769,104 @@ export class AdvancedPatientAI {
     }
 
     return parts.join(' ').trim();
+  }
+
+  /**
+   * СИСТЕМА СЛУЧАЙНЫХ ВОЗРАЖЕНИЙ (как в симуляторе продаж)
+   * Пациент иногда сомневается без видимых причин
+   */
+  private generateRandomObjection(messageCount: number, adminProfile: any): string | null {
+    // Не генерируем возражения в первых 2-х сообщениях
+    if (messageCount < 3) return null;
+    
+    // Не генерируем возражения, если администратор отлично работает
+    if (adminProfile.empathyLevel > 75 && adminProfile.responsivenessLevel > 70) {
+      return null;
+    }
+
+    // Случайный шанс возражения
+    if (Math.random() > this.randomObjectionChance) return null;
+
+    const objectionTypes = [
+      'price_doubt',
+      'time_doubt', 
+      'trust_doubt',
+      'alternative_seeking',
+      'comparison_doubt',
+      'fear_based',
+      'procrastination',
+      'third_party_opinion'
+    ];
+
+    const type = objectionTypes[Math.floor(Math.random() * objectionTypes.length)];
+    return this.getObjectionByType(type);
+  }
+
+  /**
+   * Получить возражение определённого типа
+   */
+  private getObjectionByType(type: string): string {
+    const objections: Record<string, string[]> = {
+      price_doubt: [
+        'Знаете, мне кажется это дороговато... Может, есть что-то попроще?',
+        'А правда ли это стоит таких денег? Я видел в других местах дешевле...',
+        'Хм, цена кусается. Может, подождать какую-нибудь акцию?',
+        'Честно говоря, я не уверен что готов столько заплатить сейчас.',
+        'А точно нужно всё это делать? Может, можно обойтись меньшими тратами?'
+      ],
+      time_doubt: [
+        'Слушайте, а может это слишком долго? У меня нет столько времени...',
+        'Мне кажется, это займёт больше времени чем вы говорите.',
+        'А нет способа быстрее? Я не могу так долго ждать результата.',
+        'Честно говоря, я думал будет быстрее. Может, поищу другие варианты?',
+        'Столько времени... А оно точно того стоит?'
+      ],
+      trust_doubt: [
+        'А вы точно в этом уверены? Просто я слышал разные мнения...',
+        'Хм, звучит хорошо, но как-то слишком хорошо... Есть подвох?',
+        'Извините за недоверие, но откуда такая уверенность в результате?',
+        'Я не хочу вас обидеть, но вы не первый кто мне это обещает...',
+        'А можно как-то подтвердить ваши слова? Может, отзывы или что-то?'
+      ],
+      alternative_seeking: [
+        'А если я просто подожду? Может, само пройдёт?',
+        'Может, попробовать сначала что-то попроще, народное средство?',
+        'Я слышал про другой метод лечения, может он лучше?',
+        'А что если я сначала почитаю в интернете про другие способы?',
+        'Может, стоит получить второе мнение у другого специалиста?'
+      ],
+      comparison_doubt: [
+        'Знаете, у вас цены выше чем в соседней клинике...',
+        'А почему у конкурентов этот же сервис дешевле?',
+        'Мне друг посоветовал другое место, там говорят лучше...',
+        'Я сравнивал несколько клиник, и честно говоря, сомневаюсь...',
+        'В отзывах про другое место пишут лучше. Чем вы отличаетесь?'
+      ],
+      fear_based: [
+        'А вдруг не поможет? Тогда деньги зря потрачу...',
+        'Мне страшно, что может что-то пойти не так...',
+        'А если мне станет хуже после этого?',
+        'Вы говорите всё хорошо, но я всё равно боюсь осложнений.',
+        'А что если я один из тех, кому это не помогает?'
+      ],
+      procrastination: [
+        'Может, я ещё подумаю пару дней?',
+        'Знаете, я бы хотел посоветоваться с семьей сначала...',
+        'Давайте я вернусь к этому вопросу через недельку?',
+        'Мне нужно время всё обдумать, это серьёзное решение...',
+        'Я пока не готов принять решение, дайте мне подумать.'
+      ],
+      third_party_opinion: [
+        'Я должен посоветоваться с женой/мужем, без неё/него не решу.',
+        'Мне нужно спросить у родителей, что они думают...',
+        'Давайте я сначала у своего доктора спрошу, что он скажет?',
+        'Мой знакомый врач, я хочу с ним посоветоваться сначала.',
+        'Я обещал близким, что не буду принимать решение сам.'
+      ]
+    };
+
+    const variants = objections[type] || objections.trust_doubt;
+    return this.selectUnusedFromArray(variants);
   }
 
   /**
