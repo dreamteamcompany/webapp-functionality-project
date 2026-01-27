@@ -1676,7 +1676,7 @@ export class AdvancedPatientAI {
       return this.selectUnusedFromArray(responses);
     }
 
-    if (messageCount > 10) {
+    if (messageCount > 15) {
       if (this.currentSatisfaction > 70) {
         const responses = [
           'Спасибо вам огромное за помощь!',

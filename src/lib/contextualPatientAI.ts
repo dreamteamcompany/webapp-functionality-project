@@ -251,7 +251,7 @@ export class ContextualPatientAI {
     const messageCount = this.conversationHistory.length;
     
     return {
-      shouldAskQuestion: messageCount <= 10 && Math.random() > 0.4,
+      shouldAskQuestion: messageCount <= 15 && Math.random() > 0.4,
       shouldExpressConcern: this.anxietyLevel > 50 && Math.random() > 0.6,
       shouldShowGratitude: analysis.hasEmpathy || analysis.responseQuality > 70,
       shouldChallenge: this.currentSatisfaction < 40 && messageCount > 6,
