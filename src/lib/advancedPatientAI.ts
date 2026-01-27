@@ -478,6 +478,13 @@ export class AdvancedPatientAI {
     const adminProfile = responseContext.adminProfile;
     const strategy = responseContext.strategy;
     const phase = responseContext.phase;
+    
+    // Получаем последние сообщения для прямого цитирования
+    const lastAdminMessages = this.conversationHistory
+      .filter(m => m.role === 'user')
+      .slice(-3)
+      .map(m => m.content);
+    const lastAdminMessage = lastAdminMessages[lastAdminMessages.length - 1] || '';
 
     // 1. РЕАКЦИЯ НА КАЧЕСТВО ОБЩЕНИЯ АДМИНИСТРАТОРА
     if (adminProfile.empathyLevel > 70 && adminProfile.responsivenessLevel > 60) {
@@ -537,13 +544,19 @@ export class AdvancedPatientAI {
       }
     }
 
-    // 3. УЧЁТ НЕРЕШЁННЫХ ВОПРОСОВ
+    // 3. ПРЯМОЕ ЦИТИРОВАНИЕ И РЕАКЦИЯ НА КОНКРЕТНЫЕ ФРАЗЫ АДМИНА
+    const directReaction = this.generateDirectReactionToAdmin(userMessage, lastAdminMessage, analysis);
+    if (directReaction) {
+      parts.push(directReaction);
+    }
+
+    // 4. УЧЁТ НЕРЕШЁННЫХ ВОПРОСОВ
     if (responseContext.unresolvedQuestions.length > 0 && Math.random() > 0.5) {
       const unresolved = responseContext.unresolvedQuestions[0];
       parts.push(`Кстати, я всё ещё жду ответа на мой вопрос: "${unresolved.substring(0, 80)}..."`);
     }
 
-    // 4. РЕАКЦИЯ НА КОНКРЕТНЫЕ ТЕМЫ ИЗ СООБЩЕНИЯ
+    // 5. РЕАКЦИЯ НА КОНКРЕТНЫЕ ТЕМЫ ИЗ СООБЩЕНИЯ
     if (analysis.topics.includes('cost') && !responseContext.discussedTopics.includes('cost')) {
       parts.push(this.selectUnusedFromArray([
         'Хорошо, что вы затронули тему стоимости. Это важно для меня.',
@@ -560,7 +573,13 @@ export class AdvancedPatientAI {
       ]));
     }
 
-    // 5. СТРАТЕГИЧЕСКИЕ ЭЛЕМЕНТЫ ОТВЕТА
+    // 6. ПРОТИВОРЕЧИЯ В ОТВЕТАХ АДМИНИСТРАТОРА
+    const contradiction = this.detectContradictions(lastAdminMessages);
+    if (contradiction) {
+      parts.push(contradiction);
+    }
+
+    // 7. СТРАТЕГИЧЕСКИЕ ЭЛЕМЕНТЫ ОТВЕТА
     if (strategy.shouldShowGratitude && parts.length === 0) {
       parts.push(this.selectUnusedFromArray([
         'Спасибо за ваше терпение.',
@@ -583,7 +602,7 @@ export class AdvancedPatientAI {
       ]));
     }
 
-    // 6. ЕСЛИ НИЧЕГО НЕ СГЕНЕРИРОВАНО - БАЗОВЫЙ ОТВЕТ
+    // 8. ЕСЛИ НИЧЕГО НЕ СГЕНЕРИРОВАНО - БАЗОВЫЙ ОТВЕТ
     if (parts.length === 0) {
       parts.push(this.generateContextBasedResponse(analysis));
     }
@@ -603,6 +622,122 @@ export class AdvancedPatientAI {
     }
     
     return 'Расскажите, пожалуйста, как это будет проходить?';
+  }
+
+  /**
+   * Прямая реакция на конкретные фразы администратора (цитирование)
+   */
+  private generateDirectReactionToAdmin(userMessage: string, lastAdminMessage: string, analysis: any): string | null {
+    const lower = userMessage.toLowerCase();
+    const lastLower = lastAdminMessage.toLowerCase();
+
+    // Если админ упомянул конкретные цифры - запомнить их
+    const priceMatch = userMessage.match(/(\d+[\s]*(рубл|тысяч|₽))/);
+    if (priceMatch && analysis.topics.includes('cost')) {
+      const variants = [
+        `Так, ${priceMatch[0]}... Это много для меня. А нет вариантов подешевле?`,
+        `${priceMatch[0]}? Хм, я думал будет дороже. Это за всё лечение?`,
+        `${priceMatch[0]}... Мне нужно подумать, смогу ли я себе это позволить.`,
+        `Вы сказали ${priceMatch[0]}? А что входит в эту стоимость?`
+      ];
+      return this.selectUnusedFromArray(variants);
+    }
+
+    // Если админ назвал срок лечения
+    const timeMatch = userMessage.match(/(\d+\s*(день|недел|месяц|час|минут))/);
+    if (timeMatch && analysis.topics.includes('time')) {
+      const variants = [
+        `${timeMatch[0]}? Это довольно долго для меня...`,
+        `${timeMatch[0]}... Хорошо, это приемлемо. А результат когда будет?`,
+        `Подождите, ${timeMatch[0]}? Я не смогу столько времени уделить...`,
+        `${timeMatch[0]} - это быстрее, чем я думал. Отлично!`
+      ];
+      return this.selectUnusedFromArray(variants);
+    }
+
+    // Если админ использовал слово "гарантия"
+    if (lower.includes('гарантир') || lower.includes('обещаю')) {
+      const variants = [
+        'Вы гарантируете? Это важно, хочу быть уверен.',
+        'Хорошо, что вы это гарантируете. Это меня успокаивает.',
+        'А если гарантия не сработает? Что тогда?',
+        'Спасибо за гарантии, но всё равно немного волнуюсь...'
+      ];
+      return this.selectUnusedFromArray(variants);
+    }
+
+    // Если админ сказал "безопасно"
+    if (lower.includes('безопасн') && this.currentEmotionalState === 'scared') {
+      const variants = [
+        'Вы говорите "безопасно", но я всё равно боюсь...',
+        'Безопасно - это хорошо слышать. Но всё же, какие риски?',
+        'Спасибо, что сказали про безопасность. Мне полегче стало.',
+        'Понятно, что безопасно. А болезненно?'
+      ];
+      return this.selectUnusedFromArray(variants);
+    }
+
+    // Если админ использовал медицинские термины
+    const medicalTerms = ['диагноз', 'патология', 'симптоматика', 'этиология', 'терапия'];
+    if (medicalTerms.some(term => lower.includes(term)) && this.scenario.aiPersonality.knowledge === 'low') {
+      const usedTerm = medicalTerms.find(t => lower.includes(t));
+      return this.selectUnusedFromArray([
+        `Простите, вы сказали "${usedTerm}"... Что это значит?`,
+        `Стоп, "${usedTerm}"? Объясните попроще, пожалуйста.`,
+        `Я не понял это слово - "${usedTerm}". Можно без терминов?`
+      ]);
+    }
+
+    // Если админ ответил на прямой вопрос пациента
+    const lastPatientMessage = this.conversationHistory
+      .filter(m => m.role === 'ai')
+      .slice(-1)[0]?.content || '';
+    
+    if (lastPatientMessage.includes('?')) {
+      const questionTopic = lastPatientMessage.toLowerCase();
+      if (questionTopic.includes('больно') && (lower.includes('больно') || lower.includes('боль'))) {
+        return this.selectUnusedFromArray([
+          'Спасибо, что ответили про боль. Теперь понятнее.',
+          'Хорошо, что вы прояснили насчёт боли. Это главное для меня.',
+          'Понял насчёт боли. А после процедуры как будет?'
+        ]);
+      }
+      
+      if (questionTopic.includes('стоимост') && (lower.includes('стоимост') || lower.includes('цен'))) {
+        return this.selectUnusedFromArray([
+          'Спасибо за информацию о ценах. Буду думать.',
+          'Понятно насчёт стоимости. А оплатить можно частями?',
+          'Хорошо, что озвучили цены сразу. Это честно.'
+        ]);
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Обнаружение противоречий в ответах администратора
+   */
+  private detectContradictions(lastAdminMessages: string[]): string | null {
+    if (lastAdminMessages.length < 2) return null;
+
+    const messages = lastAdminMessages.map(m => m.toLowerCase());
+    
+    // Противоречие в стоимости
+    const hasCheap = messages.some(m => m.includes('недорог') || m.includes('доступн'));
+    const hasExpensive = messages.some(m => m.includes('дорог') || m.includes('дорогост'));
+    if (hasCheap && hasExpensive) {
+      return 'Подождите, вы сначала говорили что недорого, а теперь про дороговизну... Что же правда?';
+    }
+
+    // Противоречие во времени
+    const hasQuick = messages.some(m => m.includes('быстро') || m.includes('недолго'));
+    const hasSlow = messages.some(m => m.includes('долго') || m.includes('длительн'));
+    if (hasQuick && hasSlow) {
+      return 'Извините, но вы говорили что быстро, а сейчас про долгий срок. Уточните, пожалуйста?';
+    }
+
+    return null;
   }
 
   /**
