@@ -81,25 +81,25 @@ export class AdvancedPatientAI {
 
   constructor(scenario: CustomScenario) {
     this.scenario = scenario;
-    this.currentEmotionalState = scenario.aiPersonality.emotionalState;
+    this.currentEmotionalState = scenario.aiPersonality.emotionalState || 'neutral';
     this.sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     // Инициализация системы контекстной памяти
     this.dialogueContext = new DialogueContextManager(this.sessionId, {
-      concerns: scenario.aiPersonality.concerns,
-      emotionalState: scenario.aiPersonality.emotionalState
+      concerns: scenario.aiPersonality.concerns || [],
+      emotionalState: scenario.aiPersonality.emotionalState || 'neutral'
     });
     
     this.context = {
       topicsDiscussed: new Set(),
-      emotionalJourney: [scenario.aiPersonality.emotionalState],
+      emotionalJourney: [scenario.aiPersonality.emotionalState || 'neutral'],
       empathyShown: 0,
       questionsAsked: 0,
       clarityLevel: 0,
       lastUserSentiment: 'neutral',
       keyMoments: [],
       trustBuilding: [50],
-      anxietyLevels: [this.getAnxietyLevel(scenario.aiPersonality.emotionalState)],
+      anxietyLevels: [this.getAnxietyLevel(scenario.aiPersonality.emotionalState || 'neutral')],
       adminMistakes: [],
       adminSuccesses: []
     };
@@ -261,8 +261,9 @@ export class AdvancedPatientAI {
    * Каждый раз пациент формулирует запрос по-новому
    */
   private generateNaturalInitialMessage(): string {
-    const concern = this.scenario.aiPersonality.concerns[0];
-    const emotionalState = this.scenario.aiPersonality.emotionalState;
+    const concerns = this.scenario.aiPersonality.concerns || [];
+    const concern = concerns.length > 0 ? concerns[0] : 'общая консультация';
+    const emotionalState = this.scenario.aiPersonality.emotionalState || 'neutral';
     const parts: string[] = [];
 
     // 1. ПРИВЕТСТВИЕ (вариативное)
@@ -1020,7 +1021,8 @@ export class AdvancedPatientAI {
 
     // Если админ использовал медицинские термины
     const medicalTerms = ['диагноз', 'патология', 'симптоматика', 'этиология', 'терапия'];
-    if (medicalTerms.some(term => lower.includes(term)) && this.scenario.aiPersonality.knowledge === 'low') {
+    const patientKnowledge = this.scenario.aiPersonality.knowledge || 'medium';
+    if (medicalTerms.some(term => lower.includes(term)) && patientKnowledge === 'low') {
       const usedTerm = medicalTerms.find(t => lower.includes(t));
       return this.selectUnusedFromArray([
         `Простите, вы сказали "${usedTerm}"... Что это значит?`,
@@ -1639,6 +1641,11 @@ export class AdvancedPatientAI {
   }
 
   private selectUnusedFromArray(arr: string[]): string {
+    // Защита от пустого массива
+    if (!arr || arr.length === 0) {
+      return 'Да, понимаю...'; // Fallback на случай пустого массива
+    }
+
     const unused = arr.filter(item => !this.usedPhrases.has(item));
     
     if (unused.length === 0) {
