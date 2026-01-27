@@ -49,6 +49,15 @@ export default function AdminSimulatorDialog({ open, onOpenChange }: AdminSimula
     }
   }, [simulator, forceUpdate]);
 
+  // Автоматический скролл при завершении сценария
+  useEffect(() => {
+    if (state?.isCompleted) {
+      setTimeout(() => {
+        dialogueEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  }, [state?.isCompleted]);
+
   const handleStartScenario = (scenarioId: string) => {
     setSelectedScenario(scenarioId);
     const newSimulator = new AdminSimulator(scenarioId);
@@ -267,37 +276,38 @@ export default function AdminSimulatorDialog({ open, onOpenChange }: AdminSimula
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 overflow-hidden">
           {/* Диалог */}
-          <div className="lg:col-span-2 flex flex-col">
-            <Card className="flex-1 p-6 overflow-y-auto">
-              <div className="space-y-4">
-                {state?.dialogue.map((message, index) => (
-                  <div
-                    key={index}
-                    className={`flex ${message.speaker === 'admin' ? 'justify-end' : 'justify-start'}`}
-                  >
+          <div className="lg:col-span-2 flex flex-col overflow-hidden">
+            <div className="flex-1 overflow-y-auto px-1">
+              <Card className="p-6">
+                <div className="space-y-4 pb-4">
+                  {state?.dialogue.map((message, index) => (
                     <div
-                      className={`max-w-[80%] rounded-lg p-4 ${
-                        message.speaker === 'admin'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
-                      }`}
+                      key={index}
+                      className={`flex ${message.speaker === 'admin' ? 'justify-end' : 'justify-start'}`}
                     >
-                      <div className="flex items-center gap-2 mb-2">
-                        <Icon
-                          name={message.speaker === 'admin' ? 'UserCircle' : 'User'}
-                          size={16}
-                        />
-                        <span className="text-xs font-semibold">
-                          {message.speaker === 'admin' ? 'Вы' : state.scenario.patientName}
-                        </span>
+                      <div
+                        className={`max-w-[80%] rounded-lg p-4 ${
+                          message.speaker === 'admin'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <Icon
+                            name={message.speaker === 'admin' ? 'UserCircle' : 'User'}
+                            size={16}
+                          />
+                          <span className="text-xs font-semibold">
+                            {message.speaker === 'admin' ? 'Вы' : state.scenario.patientName}
+                          </span>
+                        </div>
+                        <p className="text-sm leading-relaxed">{message.text}</p>
                       </div>
-                      <p className="text-sm leading-relaxed">{message.text}</p>
                     </div>
-                  </div>
-                ))}
-                <div ref={dialogueEndRef} />
-              </div>
-            </Card>
+                  ))}
+                  <div ref={dialogueEndRef} />
+                </div>
+              </Card>
 
             {/* Объяснение */}
             {showExplanation && (
@@ -336,83 +346,84 @@ export default function AdminSimulatorDialog({ open, onOpenChange }: AdminSimula
               </div>
             )}
 
-            {/* Результаты */}
-            {state?.isCompleted && (
-              <Card className="mt-4 p-6 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/20">
-                <div className="text-center">
-                  <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Icon name="Trophy" size={40} className="text-white" />
-                  </div>
-                  
-                  <h3 className="text-2xl font-bold mb-2">Сценарий завершён!</h3>
-                  <p className={`text-4xl font-bold mb-4 ${getScoreColor(state.finalScore!)}`}>
-                    {state.finalScore} / 100
-                  </p>
-                  <p className="text-lg text-muted-foreground mb-6">
-                    {getScoreText(state.finalScore!)}
-                  </p>
-                  
-                  {/* Новые достижения */}
-                  {achievementSystem.getUnlockedAchievements().filter(a => a.scenarioId === selectedScenario).length > 0 && (
-                    <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg border border-yellow-500/20">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Icon name="Sparkles" size={18} className="text-yellow-600" />
-                        <span className="font-semibold text-yellow-700">Получено достижений:</span>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {achievementSystem.getUnlockedAchievements()
-                          .filter(a => a.scenarioId === selectedScenario)
-                          .map(unlocked => {
-                            const achievement = SIMULATOR_ACHIEVEMENTS.find(a => a.id === unlocked.achievementId);
-                            if (!achievement) return null;
-                            return (
-                              <Badge key={unlocked.achievementId} className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
-                                <Icon name={achievement.icon as any} size={12} className="mr-1" />
-                                {achievement.title}
-                              </Badge>
-                            );
-                          })
-                        }
-                      </div>
+              {/* Результаты */}
+              {state?.isCompleted && (
+                <Card className="mt-4 mb-6 p-6 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/20">
+                  <div className="text-center">
+                    <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Icon name="Trophy" size={40} className="text-white" />
                     </div>
-                  )}
-                  
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-4">
-                      <Button onClick={handleRestart} variant="outline">
-                        <Icon name="RotateCcw" size={16} className="mr-2" />
-                        Другой сценарий
+                    
+                    <h3 className="text-2xl font-bold mb-2">Сценарий завершён!</h3>
+                    <p className={`text-4xl font-bold mb-4 ${getScoreColor(state.finalScore!)}`}>
+                      {state.finalScore} / 100
+                    </p>
+                    <p className="text-lg text-muted-foreground mb-6">
+                      {getScoreText(state.finalScore!)}
+                    </p>
+                    
+                    {/* Новые достижения */}
+                    {achievementSystem.getUnlockedAchievements().filter(a => a.scenarioId === selectedScenario).length > 0 && (
+                      <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg border border-yellow-500/20">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Icon name="Sparkles" size={18} className="text-yellow-600" />
+                          <span className="font-semibold text-yellow-700">Получено достижений:</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {achievementSystem.getUnlockedAchievements()
+                            .filter(a => a.scenarioId === selectedScenario)
+                            .map(unlocked => {
+                              const achievement = SIMULATOR_ACHIEVEMENTS.find(a => a.id === unlocked.achievementId);
+                              if (!achievement) return null;
+                              return (
+                                <Badge key={unlocked.achievementId} className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
+                                  <Icon name={achievement.icon as any} size={12} className="mr-1" />
+                                  {achievement.title}
+                                </Badge>
+                              );
+                            })
+                          }
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-4">
+                        <Button onClick={handleRestart} variant="outline">
+                          <Icon name="RotateCcw" size={16} className="mr-2" />
+                          Другой сценарий
+                        </Button>
+                        <Button onClick={() => handleStartScenario(selectedScenario)}>
+                          <Icon name="Play" size={16} className="mr-2" />
+                          Повторить
+                        </Button>
+                      </div>
+                      <Button 
+                        onClick={() => {
+                          if (simulator) {
+                            const analysis = simulator.getDeepAnalysis();
+                            setDeepAnalysisData(analysis);
+                            setShowDeepAnalysis(true);
+                          }
+                        }}
+                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                      >
+                        <Icon name="Brain" size={16} className="mr-2" />
+                        Глубокий анализ диалога
                       </Button>
-                      <Button onClick={() => handleStartScenario(selectedScenario)}>
-                        <Icon name="Play" size={16} className="mr-2" />
-                        Повторить
+                      <Button 
+                        onClick={() => setShowAchievements(true)} 
+                        variant="outline" 
+                        className="w-full border-purple-500/30 hover:border-purple-500/50"
+                      >
+                        <Icon name="Trophy" size={16} className="mr-2" />
+                        Все достижения
                       </Button>
                     </div>
-                    <Button 
-                      onClick={() => {
-                        if (simulator) {
-                          const analysis = simulator.getDeepAnalysis();
-                          setDeepAnalysisData(analysis);
-                          setShowDeepAnalysis(true);
-                        }
-                      }}
-                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                    >
-                      <Icon name="Brain" size={16} className="mr-2" />
-                      Глубокий анализ диалога
-                    </Button>
-                    <Button 
-                      onClick={() => setShowAchievements(true)} 
-                      variant="outline" 
-                      className="w-full border-purple-500/30 hover:border-purple-500/50"
-                    >
-                      <Icon name="Trophy" size={16} className="mr-2" />
-                      Все достижения
-                    </Button>
                   </div>
-                </div>
-              </Card>
-            )}
+                </Card>
+              )}
+            </div>
           </div>
 
           {/* Параметры */}
