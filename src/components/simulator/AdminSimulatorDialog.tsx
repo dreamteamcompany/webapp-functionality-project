@@ -29,6 +29,10 @@ export default function AdminSimulatorDialog({ open, onOpenChange }: AdminSimula
   const [deepAnalysisData, setDeepAnalysisData] = useState<any>(null);
   const dialogueEndRef = useRef<HTMLDivElement>(null);
 
+  // Получаем state и progress через useMemo
+  const state = useMemo(() => simulator?.getState(), [simulator, forceUpdate]);
+  const progress = useMemo(() => simulator?.getProgress() || 0, [simulator, forceUpdate]);
+
   // Показываем уведомления о новых достижениях по одному
   useEffect(() => {
     if (newAchievements.length > 0 && !currentNotification) {
@@ -116,9 +120,6 @@ export default function AdminSimulatorDialog({ open, onOpenChange }: AdminSimula
     handleRestart();
     onOpenChange(false);
   };
-
-  const state = useMemo(() => simulator?.getState(), [simulator, forceUpdate]);
-  const progress = useMemo(() => simulator?.getProgress() || 0, [simulator, forceUpdate]);
 
   const getParameterColor = (value: number, target: number) => {
     const percentage = (value / target) * 100;
