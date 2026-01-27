@@ -23,6 +23,7 @@ export class CustomAI {
   private messageCount = 0;
   private objectivesMet: string[] = [];
   private currentEmotionalState: string;
+  private readonly maxMessages = 15;
 
   constructor(scenario: CustomScenario) {
     this.scenario = scenario;

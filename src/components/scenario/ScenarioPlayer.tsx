@@ -30,7 +30,9 @@ export default function ScenarioPlayer({ scenario, onClose }: ScenarioPlayerProp
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      setTimeout(() => {
+        scrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }, 100);
     }
   }, [messages]);
 
@@ -60,6 +62,9 @@ export default function ScenarioPlayer({ scenario, onClose }: ScenarioPlayerProp
 
   const satisfaction = ai.getCurrentSatisfaction();
   const emotionalState = ai.getCurrentEmotionalState();
+  const messageCount = Math.floor(messages.filter(m => m.role === 'user').length);
+  const maxMessages = 15;
+  const remainingMessages = maxMessages - messageCount;
 
   const getScoreColor = (score: number) => {
     if (score >= 70) return 'text-green-600';
@@ -127,11 +132,10 @@ export default function ScenarioPlayer({ scenario, onClose }: ScenarioPlayerProp
 
           <Card className="p-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Цель</span>
-              <Button variant="ghost" size="sm" className="h-auto p-0 text-xs">
-                <Icon name="Target" size={14} className="mr-1" />
-                {scenario.context.goal.slice(0, 20)}...
-              </Button>
+              <span className="text-sm font-medium">Сообщений</span>
+              <Badge variant={remainingMessages <= 3 ? "destructive" : "secondary"}>
+                {messageCount} / {maxMessages}
+              </Badge>
             </div>
           </Card>
         </div>
@@ -287,6 +291,7 @@ export default function ScenarioPlayer({ scenario, onClose }: ScenarioPlayerProp
                   </Card>
                 </div>
               )}
+              <div ref={scrollRef} />
             </div>
           </ScrollArea>
 
@@ -307,7 +312,7 @@ export default function ScenarioPlayer({ scenario, onClose }: ScenarioPlayerProp
                   rows={2}
                 />
                 <div className="flex flex-col gap-2">
-                  <Button onClick={handleSend} disabled={!input.trim() || isProcessing}>
+                  <Button onClick={handleSend} disabled={!input.trim() || isProcessing || messageCount >= maxMessages}>
                     <Icon name="Send" size={18} />
                   </Button>
                   <Button
@@ -319,9 +324,16 @@ export default function ScenarioPlayer({ scenario, onClose }: ScenarioPlayerProp
                   </Button>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground text-center">
-                Enter - отправить • Shift+Enter - новая строка
-              </p>
+              {messageCount >= maxMessages ? (
+                <div className="flex items-center justify-center gap-2 text-sm text-orange-600">
+                  <Icon name="AlertCircle" size={16} />
+                  <span>Достигнут лимит сообщений. Проанализируйте диалог.</span>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground text-center">
+                  Enter - отправить • Shift+Enter - новая строка {remainingMessages <= 5 && `• Осталось сообщений: ${remainingMessages}`}
+                </p>
+              )}
             </div>
           </div>
         </>
