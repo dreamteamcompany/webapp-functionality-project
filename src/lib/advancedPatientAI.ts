@@ -369,6 +369,12 @@ export class AdvancedPatientAI {
       return this.generateQuickSuccessReaction();
     }
 
+    // Контекстная генерация на основе истории диалога
+    const contextualResponse = this.generateContextAwareResponse(userMessage, analysis);
+    if (contextualResponse) {
+      return contextualResponse;
+    }
+
     // Эмпатия - всегда ценится
     if (analysis.hasEmpathy && this.currentSatisfaction < 70) {
       const empathyResponse = this.getRandomUnusedPhrase(
@@ -520,6 +526,145 @@ export class AdvancedPatientAI {
       'Вы меня убедили! Как мне записаться на процедуру?'
     ];
     
+    return this.selectUnusedFromArray(responses);
+  }
+
+  /**
+   * Контекстная генерация на основе анализа истории диалога
+   */
+  private generateContextAwareResponse(userMessage: string, analysis: any): string | null {
+    const messageCount = this.conversationHistory.length;
+    const previousUserMessages = this.conversationHistory
+      .filter(m => m.role === 'user')
+      .map(m => m.content);
+
+    // Анализ того, на что администратор ответил
+    const discussedTopics = Array.from(this.context.topicsDiscussed);
+    
+    // Если администратор обратился к опасениям
+    const addressedConcerns = this.scenario.aiPersonality.concerns.filter(concern => {
+      const concernWords = concern.toLowerCase().split(' ').filter(w => w.length > 3);
+      return concernWords.some(w => userMessage.toLowerCase().includes(w));
+    });
+
+    if (addressedConcerns.length > 0 && messageCount >= 2) {
+      const concern = addressedConcerns[0];
+      const responses = [
+        `Да, именно ${concern.toLowerCase()} меня и волновал больше всего. Спасибо, что прояснили!`,
+        `Хорошо, что вы подняли вопрос про ${concern.toLowerCase()}. Теперь понятнее.`,
+        `Отлично! Вы как раз ответили на мой главный вопрос про ${concern.toLowerCase()}.`
+      ];
+      
+      const response = this.selectUnusedFromArray(responses);
+      
+      // Добавляем уточняющий вопрос
+      const undiscussedTopics = ['лечение', 'стоимость', 'время', 'результат']
+        .filter(t => !discussedTopics.some(dt => dt.includes(t)));
+      
+      if (undiscussedTopics.length > 0 && Math.random() > 0.3) {
+        const followUp = this.generateTopicSpecificQuestion(undiscussedTopics[0]);
+        return `${response} ${followUp}`;
+      }
+      
+      return response;
+    }
+
+    // Если администратор задал вопрос - даём развёрнутый ответ
+    if (analysis.hasQuestion && messageCount >= 2) {
+      const responses = this.generatePatientAnswer(analysis);
+      if (responses) return responses;
+    }
+
+    // Если администратор использовал эмпатию несколько раз подряд
+    const recentEmpathy = previousUserMessages.slice(-2).every(msg => 
+      this.detectsEmpathy(msg)
+    );
+
+    if (recentEmpathy && this.context.empathyShown >= 2) {
+      return this.generateDeepGratitudeResponse();
+    }
+
+    // Если информации стало достаточно
+    if (discussedTopics.length >= 3 && this.currentSatisfaction >= 70) {
+      return this.generateInformedDecisionResponse();
+    }
+
+    return null; // Продолжаем обычную логику
+  }
+
+  private detectsEmpathy(message: string): boolean {
+    const empathyWords = ['понимаю', 'переживаете', 'волнуетесь', 'помогу', 'поддержу'];
+    return empathyWords.some(w => message.toLowerCase().includes(w));
+  }
+
+  private generateTopicSpecificQuestion(topic: string): string {
+    const questions: Record<string, string[]> = {
+      'лечение': [
+        'А как именно будет проходить процедура?',
+        'Расскажите поподробнее про этапы лечения?',
+        'Что конкретно вы будете делать?'
+      ],
+      'стоимость': [
+        'А сколько примерно это будет стоить?',
+        'Можете назвать цену?',
+        'Есть ли варианты оплаты?'
+      ],
+      'время': [
+        'Сколько времени займёт весь процесс?',
+        'Как скоро я увижу результат?',
+        'Как часто нужно будет приходить?'
+      ],
+      'результат': [
+        'А какой будет эффект?',
+        'Насколько это эффективно?',
+        'Что я получу в итоге?'
+      ]
+    };
+
+    const topicQuestions = questions[topic] || ['Расскажите подробнее?'];
+    return this.selectUnusedFromArray(topicQuestions);
+  }
+
+  private generatePatientAnswer(analysis: any): string | null {
+    // Если администратор спросил про симптомы
+    if (analysis.topics.includes('symptoms') || analysis.topics.includes('pain')) {
+      const symptoms = this.scenario.aiPersonality.concerns
+        .filter(c => c.includes('боль') || c.includes('дискомфорт'))
+        .slice(0, 2);
+      
+      if (symptoms.length > 0) {
+        return `У меня ${symptoms[0].toLowerCase()}. ${symptoms.length > 1 ? `Ещё ${symptoms[1].toLowerCase()}.` : ''} Как с этим быть?`;
+      }
+    }
+
+    // Если администратор спросил про опасения
+    if (analysis.intent === 'ask_concerns' || userMessage => userMessage.includes('волнует')) {
+      const concerns = this.scenario.aiPersonality.concerns.slice(0, 2);
+      return `Больше всего меня волнует ${concerns.join(' и ')}. Вы можете помочь с этим?`;
+    }
+
+    return null;
+  }
+
+  private generateDeepGratitudeResponse(): string {
+    const responses = [
+      'Вы очень внимательны, спасибо за такое отношение! Мне правда стало легче.',
+      'Приятно, что вы так искренне пытаетесь помочь. Я чувствую вашу заботу.',
+      'Спасибо, что уделяете мне столько времени и внимания. Это очень важно для меня.',
+      'Редко встретишь такого чуткого специалиста. Вы действительно профессионал!'
+    ];
+
+    return this.selectUnusedFromArray(responses);
+  }
+
+  private generateInformedDecisionResponse(): string {
+    const responses = [
+      'Знаете что, я получил всю нужную информацию. Теперь могу принять решение. Давайте запишемся!',
+      'Отлично! Мы всё обсудили, что мне было важно. Я готов начать. Когда можно?',
+      'Супер! Вы ответили на все мои вопросы. Записывайте меня на приём!',
+      'Прекрасно! Теперь всё понятно. Хочу к вам записаться.'
+    ];
+
     return this.selectUnusedFromArray(responses);
   }
 
