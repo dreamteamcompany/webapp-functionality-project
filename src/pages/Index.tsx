@@ -16,6 +16,7 @@ import SalesBattle from '@/components/games/SalesBattle';
 import DashboardHeader from './Index/DashboardHeader';
 import DashboardContent from './Index/DashboardContent';
 import KnowledgeBase from './Index/KnowledgeBase';
+import ProfileContent from './Index/ProfileContent';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
 import { CustomScenario } from '@/types/customScenario';
@@ -443,9 +444,7 @@ export default function Index() {
           </TabsContent>
 
           <TabsContent value="profile" className="space-y-6">
-            <div className="text-center p-12 text-muted-foreground">
-              Раздел профиля в разработке
-            </div>
+            <ProfileContent currentUser={currentUser} />
           </TabsContent>
         </Tabs>
       </main>
