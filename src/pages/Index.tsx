@@ -377,12 +377,33 @@ export default function Index() {
     setPlayingCustomScenario(null);
   };
 
+  const handleNavigateToSimulatorAnalytics = () => {
+    navigate('/admin/simulator-analytics');
+  };
+
+  const handleNavigateToProfile = () => {
+    setActiveTab('profile');
+  };
+
+  const handleNavigateToAchievements = () => {
+    setActiveTab('dashboard');
+    setTimeout(() => {
+      const achievementsSection = document.querySelector('[data-section="achievements"]');
+      if (achievementsSection) {
+        achievementsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader
         currentUser={currentUser}
         onLogout={handleLogout}
         onNavigateToAdmin={() => navigate('/admin')}
+        onNavigateToSimulatorAnalytics={handleNavigateToSimulatorAnalytics}
+        onNavigateToProfile={handleNavigateToProfile}
+        onNavigateToAchievements={handleNavigateToAchievements}
       />
 
       <main className="container mx-auto px-6 py-8">

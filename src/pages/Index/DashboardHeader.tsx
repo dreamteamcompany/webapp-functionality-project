@@ -21,12 +21,18 @@ interface DashboardHeaderProps {
   currentUser: User | null;
   onLogout: () => void;
   onNavigateToAdmin: () => void;
+  onNavigateToSimulatorAnalytics?: () => void;
+  onNavigateToProfile?: () => void;
+  onNavigateToAchievements?: () => void;
 }
 
 export default function DashboardHeader({
   currentUser,
   onLogout,
   onNavigateToAdmin,
+  onNavigateToSimulatorAnalytics,
+  onNavigateToProfile,
+  onNavigateToAchievements,
 }: DashboardHeaderProps) {
   const getUserInitials = (name: string) => {
     return name
@@ -74,11 +80,15 @@ export default function DashboardHeader({
                   <Icon name="Settings" size={16} className="mr-2" />
                   Администрирование
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={onNavigateToSimulatorAnalytics}>
+                  <Icon name="BarChart3" size={16} className="mr-2" />
+                  Аналитика симулятора
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onNavigateToProfile}>
                   <Icon name="User" size={16} className="mr-2" />
                   Профиль
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={onNavigateToAchievements}>
                   <Icon name="Trophy" size={16} className="mr-2" />
                   Достижения
                 </DropdownMenuItem>
