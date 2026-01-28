@@ -7,6 +7,7 @@ export interface User {
   full_name: string;
   role_id: number;
   role_name: string;
+  role?: string;
   is_blocked?: boolean;
 }
 

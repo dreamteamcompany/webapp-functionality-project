@@ -17,6 +17,7 @@ import DashboardHeader from './Index/DashboardHeader';
 import DashboardContent from './Index/DashboardContent';
 import KnowledgeBase from './Index/KnowledgeBase';
 import ProfileContent from './Index/ProfileContent';
+import AdminAnalytics from './Index/AdminAnalytics';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
 import { CustomScenario } from '@/types/customScenario';
@@ -27,7 +28,8 @@ import CustomDoctorDialog from '@/components/custom-scenarios/CustomDoctorDialog
 
 export default function Index() {
   const navigate = useNavigate();
-  const currentUser = authService.getUser();
+  const currentUserData = authService.getUser();
+  const currentUser = currentUserData ? { ...currentUserData, role: currentUserData.role_name === 'Администратор' ? 'admin' : 'user' } : null;
   
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -408,11 +410,14 @@ export default function Index() {
 
       <main className="container mx-auto px-6 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="dashboard">Главная</TabsTrigger>
             <TabsTrigger value="knowledge">База знаний</TabsTrigger>
             <TabsTrigger value="stats">Статистика</TabsTrigger>
             <TabsTrigger value="profile">Профиль</TabsTrigger>
+            {currentUser?.role === 'admin' && (
+              <TabsTrigger value="admin-analytics">Аналитика</TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -467,6 +472,12 @@ export default function Index() {
           <TabsContent value="profile" className="space-y-6">
             <ProfileContent currentUser={currentUser} />
           </TabsContent>
+
+          {currentUser?.role === 'admin' && (
+            <TabsContent value="admin-analytics" className="space-y-6">
+              <AdminAnalytics />
+            </TabsContent>
+          )}
         </Tabs>
       </main>
 
