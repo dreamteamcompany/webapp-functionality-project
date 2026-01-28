@@ -15,9 +15,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface User {
   id: number;
-  name: string;
-  role: string;
-  department: string;
+  name?: string;
+  full_name?: string;
+  role?: string;
+  role_name?: string;
+  department?: string;
   avatar?: string;
 }
 
@@ -213,17 +215,21 @@ export default function ProfileContent({ currentUser }: ProfileContentProps) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const userName = currentUser.full_name || currentUser.name || 'Пользователь';
+  const userRole = currentUser.role_name || currentUser.role || 'Пользователь';
+  const userDepartment = currentUser.department || 'Не указан';
+
   return (
     <div className="space-y-6">
       <Card className="p-6">
         <div className="flex items-center gap-6">
           <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-3xl font-bold text-primary">
-            {currentUser.name.charAt(0)}
+            {userName.charAt(0)}
           </div>
           <div className="flex-1">
-            <h2 className="text-2xl font-bold">{currentUser.name}</h2>
-            <p className="text-muted-foreground">{currentUser.role}</p>
-            <p className="text-sm text-muted-foreground">{currentUser.department}</p>
+            <h2 className="text-2xl font-bold">{userName}</h2>
+            <p className="text-muted-foreground">{userRole}</p>
+            <p className="text-sm text-muted-foreground">{userDepartment}</p>
           </div>
         </div>
       </Card>
