@@ -104,6 +104,7 @@ def handler(event, context):
                             'statusCode': 200,
                             'headers': CORS_HEADERS,
                             'body': json.dumps({
+                                'success': True,
                                 'session_token': new_session_token,
                                 'user': {
                                     'id': user_id,

@@ -11,14 +11,16 @@
       "method": "POST",
       "path": "/",
       "body": {
-        "username": "user",
+        "action": "login",
+        "username": "admin",
         "password": "admin123"
       },
       "expectedStatus": 200,
       "expectedBody": {
+        "success": true,
         "session_token": "string",
         "user": {
-          "username": "user"
+          "username": "admin"
         }
       },
       "bodyMatcher": "partial"
