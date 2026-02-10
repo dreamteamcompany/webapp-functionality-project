@@ -52,34 +52,60 @@ class AuthService {
   }
 
   async login(username: string, password: string): Promise<AuthResponse> {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        action: 'login',
-        username,
-        password,
-      }),
-    });
+    console.log('[AUTH] Starting login request...', { username });
+    
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'login',
+          username,
+          password,
+        }),
+      });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Login failed');
+      console.log('[AUTH] Login response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[AUTH] Login failed response:', errorText);
+        let error;
+        try {
+          error = JSON.parse(errorText);
+        } catch {
+          throw new Error(`Ошибка сервера: ${response.status}`);
+        }
+        throw new Error(error.error || 'Login failed');
+      }
+
+      const data: AuthResponse = await response.json();
+      console.log('[AUTH] Login successful, received data:', { 
+        success: data.success, 
+        hasToken: !!data.session_token,
+        hasUser: !!data.user 
+      });
+      
+      if (!data.success) {
+        throw new Error('Login failed: success=false');
+      }
+      
+      this.sessionToken = data.session_token;
+      this.currentUser = data.user;
+      this.permissions = data.permissions;
+      
+      localStorage.setItem('session_token', data.session_token);
+      localStorage.setItem('current_user', JSON.stringify(data.user));
+      localStorage.setItem('permissions', JSON.stringify(data.permissions));
+      
+      console.log('[AUTH] Login data saved to localStorage');
+      return data;
+    } catch (error) {
+      console.error('[AUTH] Login error:', error);
+      throw error;
     }
-
-    const data: AuthResponse = await response.json();
-    
-    this.sessionToken = data.session_token;
-    this.currentUser = data.user;
-    this.permissions = data.permissions;
-    
-    localStorage.setItem('session_token', data.session_token);
-    localStorage.setItem('current_user', JSON.stringify(data.user));
-    localStorage.setItem('permissions', JSON.stringify(data.permissions));
-    
-    return data;
   }
 
   async logout(): Promise<void> {
