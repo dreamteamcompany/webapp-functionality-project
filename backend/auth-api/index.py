@@ -20,7 +20,15 @@ def get_db_connection():
 
 def handler(event, context):
     """API для авторизации с поддержкой БД"""
+    try:
+        print(f"[AUTH] Handler invoked")
+        print(f"[AUTH] Event keys: {list(event.keys())}")
+        print(f"[AUTH] Headers: {event.get('headers', {})}")
+    except Exception as e:
+        print(f"[AUTH] Error in initial debug: {e}")
+    
     method = event.get('httpMethod', 'GET')
+    print(f"[AUTH] HTTP Method: {method}")
     
     if method == 'OPTIONS':
         return {

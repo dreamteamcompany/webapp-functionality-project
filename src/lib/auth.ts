@@ -52,19 +52,23 @@ class AuthService {
   }
 
   async login(username: string, password: string): Promise<AuthResponse> {
-    console.log('[AUTH] Starting login request...', { username });
+    console.log('[AUTH] Starting login request...', { username, api_url: API_URL });
     
     try {
+      const requestBody = {
+        action: 'login',
+        username,
+        password,
+      };
+      console.log('[AUTH] Request body:', requestBody);
+      
       const response = await fetch(API_URL, {
         method: 'POST',
+        mode: 'cors',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          action: 'login',
-          username,
-          password,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       console.log('[AUTH] Login response status:', response.status);
@@ -113,6 +117,7 @@ class AuthService {
       try {
         await fetch(API_URL, {
           method: 'POST',
+          mode: 'cors',
           headers: {
             'Content-Type': 'application/json',
             'X-Session-Token': this.sessionToken,
@@ -147,6 +152,7 @@ class AuthService {
       console.log('[AUTH] Sending validation request...');
       const response = await fetch(API_URL, {
         method: 'POST',
+        mode: 'cors',
         headers: {
           'Content-Type': 'application/json',
           'X-Session-Token': this.sessionToken,
