@@ -13,6 +13,7 @@ import LearningAdmin from "./pages/admin/Learning";
 import LearningAnalytics from "./pages/admin/LearningAnalytics";
 import AuditLog from "./pages/admin/AuditLog";
 import MyLearning from "./pages/employee/MyLearning";
+import TrainingPage from "./pages/TrainingPage";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/admin/learning-analytics" element={<ProtectedRoute requiredPermission="courses.view"><LearningAnalytics /></ProtectedRoute>} />
           <Route path="/admin/audit" element={<ProtectedRoute requiredPermission="system.logs"><AuditLog /></ProtectedRoute>} />
           <Route path="/my-learning" element={<ProtectedRoute><MyLearning /></ProtectedRoute>} />
+          <Route path="/training" element={<ProtectedRoute><TrainingPage /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
