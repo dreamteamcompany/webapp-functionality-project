@@ -51,7 +51,7 @@ export default function DashboardHeader({
               <Icon name="GraduationCap" size={24} className="text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">Learning Hub</h1>
+              <h1 className="text-xl font-bold">Команда Мечты</h1>
               <p className="text-xs text-muted-foreground">Платформа обучения и развития</p>
             </div>
           </div>
