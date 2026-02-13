@@ -77,34 +77,28 @@ class SendMessageUseCase:
         if not dialog:
             raise ValueError(f"Диалог {dialog_id} не найден")
         
-        # 1. Сохраняем сообщение пользователя
         user_msg = dialog.add_message(
             role=MessageRole.USER,
             content=message_text,
-            token_count=len(message_text) // 4  # Примерная оценка
+            token_count=len(message_text) // 4
         )
         
-        # 2. Проверяем необходимость саммари
         if dialog.needs_summarization():
-            old_messages = dialog.get_messages_for_summary()
-            if old_messages:
-                summary = self._llm_service.create_summary(old_messages)
-                dialog.replace_history_with_summary(summary)
+            self._apply_summarization(dialog)
         
-        # 3. Формируем полную историю
         full_history = dialog.get_full_history()
-        
-        # 4. Получаем ответ от LLM
         llm_response = self._llm_service.generate_response(full_history)
         
-        # 5. Сохраняем ответ ассистента
+        total_tokens_used = llm_response.get('total_tokens', 0)
+        if total_tokens_used > 0:
+            dialog.total_tokens = total_tokens_used
+        
         assistant_msg = dialog.add_message(
             role=MessageRole.ASSISTANT,
             content=llm_response['text'],
             token_count=llm_response.get('tokens', 0)
         )
         
-        # 6. Сохраняем обновленный диалог
         self._dialog_repo.save(dialog)
         
         return {
@@ -119,6 +113,16 @@ class SendMessageUseCase:
                 'timestamp': assistant_msg.timestamp.isoformat()
             }
         }
+    
+    def _apply_summarization(self, dialog: Dialog) -> None:
+        old_messages = dialog.get_messages_for_summary()
+        if not old_messages:
+            return
+        
+        print(f"[SUMMARIZE] Создание саммари для {len(old_messages)} сообщений")
+        summary = self._llm_service.create_summary(old_messages)
+        dialog.replace_history_with_summary(summary)
+        print(f"[SUMMARIZE] Саммари создано, осталось {len(dialog.messages)} сообщений")
 
 
 class GetDialogHistoryUseCase:

@@ -18,11 +18,11 @@ class YandexLLMClient(ILLMService):
     MODEL_URI_TEMPLATE = 'gpt://{folder_id}/yandexgpt-lite/latest'
     
     def __init__(self):
-        self.api_key = os.environ.get('YANDEX_LLM_API_KEY')
-        self.folder_id = os.environ.get('YANDEX_LLM_FOLDER_ID')
+        self.api_key = os.environ.get('YANDEX_CLOUD_API_KEY', '')
+        self.folder_id = os.environ.get('YANDEX_CLOUD_FOLDER_ID', '')
         
         if not self.api_key or not self.folder_id:
-            raise ValueError("YANDEX_LLM_API_KEY и YANDEX_LLM_FOLDER_ID обязательны")
+            raise ValueError("YANDEX_CLOUD_API_KEY и YANDEX_CLOUD_FOLDER_ID обязательны")
         
         self.model_uri = self.MODEL_URI_TEMPLATE.format(folder_id=self.folder_id)
     
@@ -73,11 +73,17 @@ class YandexLLMClient(ILLMService):
                 raise RuntimeError("Пустой ответ от API")
             
             text = alternatives[0].get('message', {}).get('text', '')
-            tokens = result.get('usage', {}).get('completionTokens', 0)
+            usage = result.get('usage', {})
+            completion_tokens = int(usage.get('completionTokens', '0'))
+            total_tokens = int(usage.get('totalTokens', '0'))
             
-            print(f"[LLM] Ответ получен: {len(text)} символов, {tokens} токенов")
+            print(f"[LLM] Ответ получен: {len(text)} символов, completion={completion_tokens}, total={total_tokens}")
             
-            return {'text': text, 'tokens': tokens}
+            return {
+                'text': text,
+                'tokens': completion_tokens,
+                'total_tokens': total_tokens
+            }
             
         except requests.exceptions.Timeout:
             print("[LLM] Timeout при запросе к API")

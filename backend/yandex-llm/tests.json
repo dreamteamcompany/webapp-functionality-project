@@ -10,11 +10,45 @@
       "name": "Get scenarios list",
       "method": "GET",
       "path": "/?action=scenarios",
-      "expectedStatus": 200,
+      "expectedStatus": 200
+    },
+    {
+      "name": "Start training requires scenario_id",
+      "method": "POST",
+      "path": "/?action=start",
+      "body": {},
+      "expectedStatus": 400,
       "expectedBody": {
-        "scenarios": "array"
+        "error": "string"
       },
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Send message requires dialog_id and message",
+      "method": "POST",
+      "path": "/?action=message",
+      "body": {},
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "History requires dialog_id",
+      "method": "GET",
+      "path": "/?action=history",
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Unknown action returns 404",
+      "method": "GET",
+      "path": "/?action=unknown",
+      "expectedStatus": 404
     }
   ]
 }

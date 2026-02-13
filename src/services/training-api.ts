@@ -1,3 +1,5 @@
+import { authService } from '@/lib/auth';
+
 const API_URL = 'https://functions.poehali.dev/4226c312-00a2-4a69-9a73-0f43263a32c5';
 
 export interface Scenario {
@@ -21,78 +23,64 @@ export interface Dialog {
   updated_at: string;
 }
 
+async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
+  const response = await fetch(url, {
+    mode: 'cors',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options?.headers,
+    },
+  });
+
+  if (!response.ok) {
+    let errorMessage = `Ошибка: ${response.statusText}`;
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.error || errorMessage;
+    } catch {
+      // ignore parse error
+    }
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+}
+
+function getCurrentUserId(): string {
+  const userId = authService.getUserId();
+  return userId ? String(userId) : 'anonymous';
+}
+
 export const trainingApi = {
   async getScenarios(): Promise<Scenario[]> {
-    const response = await fetch(`${API_URL}?action=scenarios`, {
-      method: 'GET',
-      mode: 'cors',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Ошибка загрузки сценариев: ${response.statusText}`);
-    }
-
-    const data = await response.json();
+    const data = await apiRequest<{ scenarios: Scenario[] }>(
+      `${API_URL}?action=scenarios`
+    );
     return data.scenarios;
   },
 
   async startTraining(scenarioId: string): Promise<{ dialog_id: string; scenario: Scenario }> {
-    const response = await fetch(`${API_URL}?action=start`, {
+    return apiRequest(`${API_URL}?action=start`, {
       method: 'POST',
-      mode: 'cors',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({
         scenario_id: scenarioId,
-        user_id: 'user123',
+        user_id: getCurrentUserId(),
       }),
     });
-
-    if (!response.ok) {
-      throw new Error(`Ошибка старта тренировки: ${response.statusText}`);
-    }
-
-    return response.json();
   },
 
   async sendMessage(dialogId: string, message: string): Promise<{ user_message: Message; assistant_response: Message }> {
-    const response = await fetch(`${API_URL}?action=message`, {
+    return apiRequest(`${API_URL}?action=message`, {
       method: 'POST',
-      mode: 'cors',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({
         dialog_id: dialogId,
         message,
       }),
     });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || `Ошибка отправки сообщения: ${response.statusText}`);
-    }
-
-    return response.json();
   },
 
   async getHistory(dialogId: string): Promise<Dialog> {
-    const response = await fetch(`${API_URL}?action=history&dialog_id=${dialogId}`, {
-      method: 'GET',
-      mode: 'cors',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Ошибка загрузки истории: ${response.statusText}`);
-    }
-
-    return response.json();
+    return apiRequest(`${API_URL}?action=history&dialog_id=${dialogId}`);
   },
 };

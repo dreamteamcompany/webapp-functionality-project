@@ -91,7 +91,6 @@ def handler(event: dict, context):
         
         dialog_repo = PostgresDialogRepository()
         scenario_repo = PostgresScenarioRepository()
-        llm_client = YandexLLMClient()
         
         if method == 'GET':
             if action == 'scenarios':
@@ -174,6 +173,7 @@ def handler(event: dict, context):
                 
                 print(f"[TRAINING_API] Обработка сообщения для диалога {dialog_id}")
                 
+                llm_client = YandexLLMClient()
                 use_case = SendMessageUseCase(dialog_repo, llm_client)
                 result = use_case.execute(dialog_id, message)
                 
@@ -203,9 +203,10 @@ def handler(event: dict, context):
         }
     
     except Exception as e:
-        print(f"[TRAINING_API] Unexpected error: {e}")
         import traceback
-        traceback.print_exc()
+        error_trace = traceback.format_exc()
+        print(f"[TRAINING_API] Unexpected error: {type(e).__name__}: {e}")
+        print(f"[TRAINING_API] Traceback:\n{error_trace}")
         return {
             'statusCode': 500,
             'headers': CORS_HEADERS,
