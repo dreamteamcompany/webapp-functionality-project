@@ -1,5 +1,6 @@
 import { CustomScenario } from '@/types/customScenario';
 import { DialogueContextManager } from './dialogueContext';
+import { fetchPatientReply } from './patientChatApi';
 
 export interface AIResponse {
   message: string;
@@ -539,6 +540,12 @@ export class AdvancedPatientAI {
   }
 
   async getResponse(userMessage: string): Promise<AIResponse> {
+    // История ДО добавления текущего сообщения — для отправки на backend
+    const historyForApi = this.conversationHistory.map((m) => ({
+      role: m.role === 'ai' ? ('assistant' as const) : ('user' as const),
+      content: m.content,
+    }));
+
     // Добавляем сообщение администратора в контекстную память
     this.dialogueContext.addAdminMessage(userMessage);
     
@@ -547,11 +554,15 @@ export class AdvancedPatientAI {
     const analysis = this.analyzeUserMessage(userMessage);
     this.updateContext(analysis);
 
-    // Получаем контекст для генерации ответа
-    const responseContext = this.dialogueContext.getResponseContext();
-    
-    // Генерируем ответ на основе полного контекста диалога
-    const responseText = this.generateContextualResponse(userMessage, analysis, responseContext);
+    // Получаем ответ от ИИ (RouterAI/Claude), при ошибке — локальная генерация
+    let responseText: string;
+    try {
+      responseText = await fetchPatientReply(this.scenario, historyForApi, userMessage);
+    } catch (error) {
+      console.warn('AI patient reply failed, using local fallback:', error);
+      const responseContext = this.dialogueContext.getResponseContext();
+      responseText = this.generateContextualResponse(userMessage, analysis, responseContext);
+    }
     
     this.conversationHistory.push({ role: 'ai', content: responseText });
     

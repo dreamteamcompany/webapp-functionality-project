@@ -15,6 +15,8 @@ from application.use_cases import (
     GetDialogHistoryUseCase,
     ListScenariosUseCase
 )
+from application.chat_use_case import ChatWithPatientUseCase
+from domain.patient_persona import PatientPersona
 from infrastructure.db_repositories import (
     PostgresDialogRepository,
     PostgresScenarioRepository
@@ -45,6 +47,23 @@ def get_client_id(event: dict) -> str:
     request_context = event.get('requestContext', {})
     identity = request_context.get('identity', {})
     return identity.get('sourceIp', 'unknown')
+
+
+def build_persona(data: dict) -> PatientPersona:
+    """Собрать PatientPersona из данных запроса"""
+    context = data.get('context') or {}
+    personality = data.get('personality') or {}
+    return PatientPersona(
+        role=context.get('role', ''),
+        situation=context.get('situation', ''),
+        goal=context.get('goal', ''),
+        character=personality.get('character', ''),
+        emotional_state=personality.get('emotionalState', 'calm'),
+        knowledge=personality.get('knowledge', 'medium'),
+        communication_style=personality.get('communicationStyle', 'casual'),
+        objectives=data.get('objectives') or [],
+        challenges=data.get('challenges') or []
+    )
 
 
 def handler(event: dict, context):
@@ -178,6 +197,31 @@ def handler(event: dict, context):
                 result = use_case.execute(dialog_id, message)
                 
                 print(f"[TRAINING_API] Ответ получен")
+                
+                return {
+                    'statusCode': 200,
+                    'headers': CORS_HEADERS,
+                    'body': json.dumps(result),
+                    'isBase64Encoded': False
+                }
+            
+            elif action == 'chat':
+                user_message = body.get('message', '')
+                persona_data = body.get('persona') or {}
+                history = body.get('history') or []
+                
+                if not user_message or not persona_data:
+                    return {
+                        'statusCode': 400,
+                        'headers': CORS_HEADERS,
+                        'body': json.dumps({'error': 'message и persona обязательны'}),
+                        'isBase64Encoded': False
+                    }
+                
+                persona = build_persona(persona_data)
+                llm_client = RouterAILLMClient()
+                use_case = ChatWithPatientUseCase(llm_client)
+                result = use_case.execute(persona, history, user_message)
                 
                 return {
                     'statusCode': 200,

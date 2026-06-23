@@ -45,6 +45,17 @@
       "bodyMatcher": "partial"
     },
     {
+      "name": "Chat requires message and persona",
+      "method": "POST",
+      "path": "/?action=chat",
+      "body": {},
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
       "name": "Unknown action returns 404",
       "method": "GET",
       "path": "/?action=unknown",
