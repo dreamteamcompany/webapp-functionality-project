@@ -19,7 +19,7 @@ from infrastructure.db_repositories import (
     PostgresDialogRepository,
     PostgresScenarioRepository
 )
-from infrastructure.yandex_llm_client import YandexLLMClient
+from infrastructure.routerai_llm_client import RouterAILLMClient
 from infrastructure.rate_limiter import RateLimiter
 
 
@@ -173,7 +173,7 @@ def handler(event: dict, context):
                 
                 print(f"[TRAINING_API] Обработка сообщения для диалога {dialog_id}")
                 
-                llm_client = YandexLLMClient()
+                llm_client = RouterAILLMClient()
                 use_case = SendMessageUseCase(dialog_repo, llm_client)
                 result = use_case.execute(dialog_id, message)
                 
